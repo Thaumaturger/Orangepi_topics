@@ -1,0 +1,36 @@
+17:15:12 swap_kb=84604 avail_kb=25434400 psi_full10=0.13 cpu=00:00:00 hi=0
+17:15:27 swap_kb=84604 avail_kb=25396816 psi_full10=0.03 cpu=00:00:00 hi=0
+17:15:42 swap_kb=84604 avail_kb=25391716 psi_full10=0.00 cpu=00:00:01 hi=0
+17:15:57 swap_kb=84604 avail_kb=25388872 psi_full10=0.00 cpu=00:00:01 hi=0
+17:16:12 swap_kb=84604 avail_kb=25382400 psi_full10=0.00 cpu=00:00:01 hi=0
+17:16:27 swap_kb=84604 avail_kb=25380968 psi_full10=0.00 cpu=00:00:02 hi=0
+17:16:42 swap_kb=84604 avail_kb=25377880 psi_full10=0.00 cpu=00:00:02 hi=0
+17:16:57 swap_kb=84604 avail_kb=25376200 psi_full10=0.00 cpu=00:00:02 hi=0
+17:17:12 swap_kb=84604 avail_kb=25373832 psi_full10=0.00 cpu=00:00:03 hi=0
+17:17:27 swap_kb=84604 avail_kb=25373524 psi_full10=0.00 cpu=00:00:03 hi=0
+17:17:42 swap_kb=84604 avail_kb=25377996 psi_full10=0.00 cpu=00:00:03 hi=0
+17:17:57 swap_kb=84604 avail_kb=25374260 psi_full10=0.00 cpu=00:00:04 hi=0
+17:18:12 swap_kb=84604 avail_kb=25370252 psi_full10=0.00 cpu=00:00:04 hi=0
+17:18:27 swap_kb=84604 avail_kb=25374612 psi_full10=0.00 cpu=00:00:04 hi=0
+17:18:42 swap_kb=84604 avail_kb=25369796 psi_full10=0.00 cpu=00:00:05 hi=0
+17:18:57 swap_kb=84604 avail_kb=25366724 psi_full10=0.00 cpu=00:00:05 hi=0
+17:19:12 swap_kb=84604 avail_kb=25363080 psi_full10=0.00 cpu=00:00:05 hi=0
+17:19:27 swap_kb=84604 avail_kb=25360988 psi_full10=0.00 cpu=00:00:06 hi=0
+17:19:42 swap_kb=84604 avail_kb=25358224 psi_full10=0.00 cpu=00:00:06 hi=0
+17:19:57 swap_kb=84604 avail_kb=25360532 psi_full10=0.00 cpu=00:00:06 hi=0
+17:20:12 swap_kb=84604 avail_kb=25363752 psi_full10=0.00 cpu=00:00:07 hi=0
+17:20:27 swap_kb=84604 avail_kb=25358868 psi_full10=0.00 cpu=00:00:07 hi=0
+17:20:42 swap_kb=84604 avail_kb=25353940 psi_full10=0.00 cpu=00:00:07 hi=0
+17:20:57 swap_kb=84604 avail_kb=25356800 psi_full10=0.00 cpu=00:00:08 hi=0
+17:21:12 swap_kb=84604 avail_kb=25353144 psi_full10=0.00 cpu=00:00:08 hi=0
+17:21:27 swap_kb=84604 avail_kb=25351928 psi_full10=0.00 cpu=00:00:08 hi=0
+17:21:42 swap_kb=84604 avail_kb=25352380 psi_full10=0.00 cpu=00:00:09 hi=0
+17:21:57 swap_kb=84604 avail_kb=25347764 psi_full10=0.00 cpu=00:00:09 hi=0
+17:22:12 swap_kb=84604 avail_kb=25347276 psi_full10=0.00 cpu=00:00:09 hi=0
+17:22:28 swap_kb=152616 avail_kb=13988848 psi_full10=20.21 cpu=00:00:14 hi=0
+17:22:43 swap_kb=281748 avail_kb=13972696 psi_full10=59.46 cpu=00:00:14 hi=1
+17:23:13 swap_kb=444392 avail_kb=13963660 psi_full10=86.04 cpu=00:00:14 hi=2
+17:23:34 swap_kb=712332 avail_kb=13956804 psi_full10=81.16 cpu=00:00:14 hi=3
+17:23:49 swap_kb=870832 avail_kb=13953824 psi_full10=81.40 cpu=00:00:14 hi=4
+WATCHDOG KILL
+17:24:04 target exited

@@ -1,0 +1,8 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T17:15:11+00:00
+# governor: performance 
+# mem: used=6716M cache=98M avail=24965M swap_used=82M 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-26B-A4B-it-Q4_0.gguf -t 8 -p 512 -n 64 -r 5 -lm mmap -o json > results/moe_perf_mmap_1108_1715.out
+# killed by watchdog 2026-11-08T17:23:49+00:00 swap_kb=870832 psi_full10=81.40 hi=4
+# exit=143 end: 2026-11-08T17:23:52+00:00

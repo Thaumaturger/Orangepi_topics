@@ -1,0 +1,8 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T15:58:35+00:00
+# governor: performance 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-31B-it-Q4_0.gguf -t 2,4,6,8 -p 64 -n 32 -r 3 -lm none -o json > results/dense_threads_1108_1558.json
+Terminated
+# exit=143 end: 2026-11-08T16:16:55+00:00
+# killed manually at 2026-11-08T16:17:34+00:00: swap thrash (PSI memory full ~66%, swap 2.4G used, 40s CPU in 18 min)

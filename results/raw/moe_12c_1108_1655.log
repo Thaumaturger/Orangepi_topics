@@ -1,0 +1,7 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T16:55:56+00:00
+# governor: performance 
+# mem: used=6737M cache=114M avail=24944M swap_used=82M 
+# cmd: taskset -c 0-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-26B-A4B-it-Q4_0.gguf -t 12 -p 512 -n 64 -r 5 -lm dio -o json > results/moe_12c_1108_1655.out
+# exit=0 end: 2026-11-08T17:04:42+00:00

@@ -1,0 +1,9 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T16:19:16+00:00
+# governor: performance 
+# note: page cache dropped before run
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-31B-it-Q4_0.gguf -t 2,4,6,8 -p 64 -n 32 -r 3 -lm none -o json > results/dense_threads_1108_1619.json
+# killed by watchdog 2026-11-08T16:28:22+00:00 swap_kb=300744 psi_full10=67.94
+Terminated
+# exit=143 end: 2026-11-08T16:28:26+00:00

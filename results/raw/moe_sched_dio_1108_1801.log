@@ -1,0 +1,7 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T18:01:35+00:00
+# governor: schedutil 
+# mem: used=6736M cache=100M avail=24945M swap_used=83M 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-26B-A4B-it-Q4_0.gguf -t 8 -p 512 -n 64 -r 5 -lm dio -o json > results/moe_sched_dio_1108_1801.out
+# exit=0 end: 2026-11-08T18:10:06+00:00

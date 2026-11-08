@@ -1,0 +1,23 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T15:04:25+00:00
+# governor: performance 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-batched-bench -m models/gemma-4-31B-it-Q4_0.gguf -c 4096 -npp 128 -ntg 32 -npl 1,1,2,3,4,5,6,8 -t 8
+0.00.897.919 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.897.993 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.906.430 W load: '</s>' is a normal token here, removing it from EOG list
+
+llama_batched_bench: n_kv_max = 4096, n_batch = 2048, n_ubatch = 512, flash_attn = -1, is_pp_shared = 0, is_tg_separate = 0, n_gpu_layers = -1, n_threads = 8, n_threads_batch = 8
+
+|    PP |     TG |    B |   N_KV |   T_PP s | S_PP t/s |   T_TG s | S_TG t/s |      T s |    S t/s |
+|-------|--------|------|--------|----------|----------|----------|----------|----------|----------|
+|   128 |     32 |    1 |    160 |   17.699 |     7.23 |   15.552 |     2.06 |   33.252 |     4.81 |
+|   128 |     32 |    1 |    160 |    9.426 |    13.58 |   15.494 |     2.07 |   24.920 |     6.42 |
+|   128 |     32 |    2 |    320 |   18.835 |    13.59 |   25.584 |     2.50 |   44.419 |     7.20 |
+|   128 |     32 |    3 |    480 |   28.093 |    13.67 |   33.897 |     2.83 |   61.991 |     7.74 |
+|   128 |     32 |    4 |    640 |   36.536 |    14.01 |   17.313 |     7.39 |   53.849 |    11.89 |
+|   128 |     32 |    5 |    800 |   45.960 |    13.93 |   27.358 |     5.85 |   73.318 |    10.91 |
+|   128 |     32 |    6 |    960 |   54.100 |    14.20 |   35.230 |     5.45 |   89.329 |    10.75 |
+|   128 |     32 |    8 |   1280 |   69.528 |    14.73 |   29.437 |     8.70 |   98.965 |    12.93 |
+
+# exit=0 end: 2026-11-08T15:34:37+00:00

@@ -1,0 +1,7 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T16:30:01+00:00
+# governor: performance 
+# mem: used=6707M cache=83M avail=24974M swap_used=82M 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-31B-it-Q4_0.gguf -t 2,4,6,8 -p 64 -n 32 -r 3 -lm dio -o json > results/dense_threads_dio_1108_1630.out
+# exit=0 end: 2026-11-08T16:44:37+00:00
