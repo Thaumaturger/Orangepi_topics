@@ -1,0 +1,15 @@
+[split] n_layer 30, n_embd 2816, stage A = [0, 15), stage B = [15, 30)
+[load] stage A  layers [0, 15)  220.4 s  rss 7621 MiB
+[load] stage B  layers [15, 30)  218.4 s  rss 15052 MiB
+[mem] stage A ~7621 MiB, stage B ~7431 MiB (process RSS deltas)
+[split] prefill 29 tok: stage A 0.23 s, stage B 0.42 s
+  prompt   0  max_abs 0.000e+00  rms 0.000e+00  top1 ref 236770 new 236770 
+  prompt   1  max_abs 0.000e+00  rms 0.000e+00  top1 ref   3324 new   3324 
+  prompt  28  max_abs 0.000e+00  rms 0.000e+00  top1 ref  55407 new  55407 
+  gen      0  max_abs 0.000e+00  rms 0.000e+00  top1 ref 145435 new 145435 
+  gen      1  max_abs 0.000e+00  rms 0.000e+00  top1 ref  59529 new  59529 
+  gen     28  max_abs 0.000e+00  rms 0.000e+00  top1 ref   3548 new   3548 
+[split] gen 32 tok: stage A 0.025 s/tok, stage B 0.049 s/tok (sum 13.54 t/s)
+[split] own greedy continuation:  parallelism divides a large model into smaller sequential stages, allowing each stage to be loaded onto a different device. This distribution ensures that no single board needs to hold the
+[result] rows 61  top1 agree 61/61  next-token agree 31/31  worst max_abs 0.000e+00  worst rel 0.000e+00  rms 0.000e+00
+[result] PASS (criteria: all top1 agree and worst max_abs < 1e-3)

@@ -1,0 +1,676 @@
+diff --git a/include/llama.h b/include/llama.h
+index 3877b69e2..9fe94d0d3 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -355,6 +355,13 @@ extern "C" {
+         bool no_host;         // bypass host buffer allowing extra buffers to be used
+         bool no_alloc;        // only load metadata and simulate memory allocations
+         bool load_mtp;        // whether to load MTP layers
++
++        // pipeline-parallel stage (experimental, gemma4 only): load and run only layers [layer_start, layer_end)
++        // a stage with layer_start > 0 takes its input from llama_batch.embd (the previous stage's hidden state)
++        // a stage with layer_end < n_layer outputs the hidden state via llama_get_embeddings (requires embeddings = true)
++        // layer_end <= 0 means the full model (default)
++        int32_t layer_start;
++        int32_t layer_end;
+     };
+ 
+     struct llama_sampler_seq_config {
+diff --git a/src/llama-hparams.h b/src/llama-hparams.h
+index 95daf482d..1b96284de 100644
+--- a/src/llama-hparams.h
++++ b/src/llama-hparams.h
+@@ -194,6 +194,14 @@ struct llama_hparams {
+     // note: for SWA_FULL, older tokens (outside the current ubatch) are still window-clipped
+     llama_non_causal_type non_causal_type = LLAMA_NON_CAUSAL_TYPE_ALL;
+ 
++    // pipeline-parallel stage: this model instance runs only layers [pp_layer_start, pp_layer_end)
++    // pp_layer_end <= 0 means the full model
++    int32_t pp_layer_start = 0;
++    int32_t pp_layer_end   = -1;
++
++    bool pp_enabled() const { return pp_layer_end > 0; }
++    bool pp_has_layer(int32_t il) const { return !pp_enabled() || (il >= pp_layer_start && il < pp_layer_end); }
++
+     // if is_swa_impl[il] == 1, then layer il is SWA
+     // if is_swa_impl[il] == 0, then layer il is dense (i.e. non-SWA)
+     // by default, all layers are dense
+diff --git a/src/llama-model-loader.cpp b/src/llama-model-loader.cpp
+index 485483ba1..a32166a85 100644
+--- a/src/llama-model-loader.cpp
++++ b/src/llama-model-loader.cpp
+@@ -1420,6 +1420,19 @@ void llama_model_loader::done_getting_tensors(bool partial) const {
+     }
+ }
+ 
++int llama_model_loader::skip_tensors_with_prefix(const std::string & prefix) {
++    int n_skipped = 0;
++    for (const auto & it : weights_map) {
++        if (it.first.compare(0, prefix.size(), prefix) == 0) {
++            // note: size_data may temporarily wrap below zero; init_mappings() adds the file total afterwards
++            size_data -= ggml_nbytes(it.second.tensor);
++            n_created++;
++            n_skipped++;
++        }
++    }
++    return n_skipped;
++}
++
+ void llama_model_loader::init_mappings(bool prefetch, llama_mlocks * mlock_mmaps) {
+     // note: read_lazy also requires mmap; this condition make sure it's usable even when --load-mode is not set to mmap
+     if (use_mmap || lazy.any()) {
+diff --git a/src/llama-model-loader.h b/src/llama-model-loader.h
+index ed59079a4..7c8802962 100644
+--- a/src/llama-model-loader.h
++++ b/src/llama-model-loader.h
+@@ -238,6 +238,10 @@ struct llama_model_loader {
+ 
+     void done_getting_tensors(bool partial = false) const;
+ 
++    // pipeline-parallel stage: mark every tensor whose name starts with `prefix` as handled
++    // without allocating or loading it (same bookkeeping as TENSOR_SKIP); returns the number skipped
++    int skip_tensors_with_prefix(const std::string & prefix);
++
+     void init_mappings(bool prefetch = true, llama_mlocks * mlock_mmaps = nullptr);
+ 
+     // byte range within a mapped file
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 3c4e598f1..9bf99069b 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1643,6 +1643,28 @@ void llama_model_base::load_hparams(llama_model_loader & ml) {
+     // per-arch hparams
+     load_arch_hparams(ml);
+ 
++    // pipeline-parallel stage (layer range)
++    if (params.layer_end > 0) {
++        if (arch != LLM_ARCH_GEMMA4) {
++            throw std::runtime_error("layer range (pipeline stage) is only supported for gemma4");
++        }
++        const int32_t n_layer_trunk = (int32_t) hparams.n_layer();
++        if (params.layer_start < 0 || params.layer_start >= params.layer_end || params.layer_end > n_layer_trunk) {
++            throw std::runtime_error(format("invalid layer range [%d, %d) for a model with %d layers",
++                    params.layer_start, params.layer_end, n_layer_trunk));
++        }
++        if (params.layer_start == 0 && params.layer_end == n_layer_trunk) {
++            LLAMA_LOG_INFO("%s: layer range covers the full model, ignoring\n", __func__);
++        } else {
++            hparams.pp_layer_start = params.layer_start;
++            hparams.pp_layer_end   = params.layer_end;
++            LLAMA_LOG_INFO("%s: pipeline stage: layers [%d, %d) of %d%s%s\n", __func__,
++                    hparams.pp_layer_start, hparams.pp_layer_end, n_layer_trunk,
++                    hparams.pp_layer_start == 0 ? " (first: token embeddings)" : " (input: embd)",
++                    hparams.pp_layer_end == n_layer_trunk ? " (last: lm head)" : " (output: hidden state)");
++        }
++    }
++
+     pimpl->n_bytes = ml.n_bytes;
+ 
+     pimpl->desc_str = arch_name() + " " + type_name() + " " + ml.ftype_name();
+@@ -3368,6 +3390,12 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                         }
+                     }
+ 
++                    // pipeline-parallel stage: only allocate KV cache for the layers this stage runs
++                    if (hparams.pp_enabled()) {
++                        GGML_ASSERT(!filter && "layer range cannot be combined with another KV layer filter");
++                        filter = [&](uint32_t il) { return hparams.pp_has_layer((int32_t) il); };
++                    }
++
+                     if (hparams.swa_type != LLAMA_SWA_TYPE_NONE) {
+                         GGML_ASSERT(hparams.is_swa_any());
+ 
+@@ -3495,6 +3523,8 @@ llama_model_params llama_model_default_params() {
+         /*.no_host                     =*/ false,
+         /*.no_alloc                    =*/ false,
+         /*.load_mtp                    =*/ false,
++        /*.layer_start                 =*/ 0,
++        /*.layer_end                   =*/ -1,
+     };
+ 
+     return result;
+diff --git a/src/models/gemma4.cpp b/src/models/gemma4.cpp
+index df245f811..1a0154998 100644
+--- a/src/models/gemma4.cpp
++++ b/src/models/gemma4.cpp
+@@ -53,12 +53,21 @@ void llama_model_gemma4::load_arch_tensors(llama_model_loader &) {
+         throw std::runtime_error("Gemma 4 requires n_embd_head_k_swa == n_embd_head_v_swa");
+     }
+ 
+-    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, 0);
+-
+-    output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), {n_embd, n_vocab}, TENSOR_NOT_REQUIRED);
+-    // if output is NULL, init from the input tok embed
+-    if (output == NULL) {
+-        output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, TENSOR_DUPLICATED);
++    // pipeline-parallel stage: only the first stage needs the token embeddings as input,
++    // only the last stage needs output_norm and the lm head (which may be tied to token_embd)
++    const bool pp_first = !hparams.pp_enabled() || hparams.pp_layer_start == 0;
++    const bool pp_last  = !hparams.pp_enabled() || hparams.pp_layer_end   == n_layer;
++
++    tok_embd = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, pp_first ? 0 : TENSOR_SKIP);
++
++    if (pp_last) {
++        output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), {n_embd, n_vocab}, TENSOR_NOT_REQUIRED);
++        // if output is NULL, init from the input tok embed
++        if (output == NULL) {
++            output = create_tensor(tn(LLM_TENSOR_TOKEN_EMBD, "weight"), {n_embd, n_vocab}, TENSOR_DUPLICATED);
++        }
++    } else {
++        output = create_tensor(tn(LLM_TENSOR_OUTPUT, "weight"), {n_embd, n_vocab}, TENSOR_NOT_REQUIRED | TENSOR_SKIP);
+     }
+ 
+     if (n_embd_per_layer > 0) {
+@@ -67,11 +76,17 @@ void llama_model_gemma4::load_arch_tensors(llama_model_loader &) {
+         per_layer_proj_norm  = create_tensor(tn(LLM_TENSOR_PER_LAYER_PROJ_NORM,  "weight", 0), {n_embd_per_layer}, 0);
+     }
+ 
+-    output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, 0);
++    output_norm = create_tensor(tn(LLM_TENSOR_OUTPUT_NORM, "weight"), {n_embd}, pp_last ? 0 : TENSOR_SKIP);
+ 
+     int rope_freqs_flag = 0;
+ 
+     for (int i = 0; i < n_layer; ++i) {
++        // pipeline-parallel stage: layers outside the range are neither allocated nor loaded
++        if (!hparams.pp_has_layer(i)) {
++            ml->skip_tensors_with_prefix(format("blk.%d.", i));
++            continue;
++        }
++
+         auto & layer = layers[i];
+         const int64_t n_head      = hparams.n_head(i);
+         const int64_t n_embd_head = hparams.n_embd_head_k(i);
+@@ -145,6 +160,11 @@ void llama_model_gemma4::load_arch_tensors(llama_model_loader &) {
+             layer.per_layer_post_norm  = create_tensor(tn(LLM_TENSOR_PER_LAYER_POST_NORM, "weight", i), {n_embd}, 0);
+         }
+     }
++
++    // pipeline-parallel stage without any full-attention layer: the shared rope_freqs tensor is unused
++    if (hparams.pp_enabled() && rope_freqs_flag == 0) {
++        ml->skip_tensors_with_prefix(tn(LLM_TENSOR_ROPE_FREQS, "weight").str());
++    }
+ }
+ 
+ std::unique_ptr<llm_graph_context> llama_model_gemma4::build_arch_graph(const llm_graph_params & params) const {
+@@ -172,8 +192,30 @@ llama_model_gemma4::graph::graph(const llama_model & model, const llm_graph_para
+         ggml_build_forward_expand(gf, inp_per_layer);
+     }
+ 
+-    // important: do not normalize weights for raw embeddings input (i.e. encoded image emdeddings)
+-    inpL = build_inp_embd(model.tok_embd, sqrtf(n_embd));
++    // pipeline-parallel stage: run only layers [il_start, il_end)
++    const bool pp       = hparams.pp_enabled();
++    const int  il_start = pp ? hparams.pp_layer_start : 0;
++    const int  il_end   = pp ? hparams.pp_layer_end   : n_layer;
++    const bool pp_first = il_start == 0;
++    const bool pp_last  = il_end   == n_layer;
++
++    GGML_ASSERT((pp_first || !model.per_layer_tok_embd) && "pipeline stages are not supported with per-layer embeddings");
++
++    if (pp_first) {
++        // important: do not normalize weights for raw embeddings input (i.e. encoded image emdeddings)
++        inpL = build_inp_embd(model.tok_embd, sqrtf(n_embd));
++    } else {
++        // later pipeline stage: the input is the previous stage's hidden state (residual stream),
++        // passed in through llama_batch.embd; it is already scaled, so no tok_embd and no scaling here
++        auto inp = std::make_unique<llm_graph_input_embd>(n_embd);
++        inp->embd = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_embd, n_tokens);
++        cb(inp->embd, "inp_embd", -1);
++        ggml_set_input(inp->embd);
++        inpL = inp->embd;
++        res->t_inp_embd = inpL;
++        res->add_input(std::move(inp));
++        ggml_build_forward_expand(gf, inpL);
++    }
+     cb(inpL, "inp_scaled", -1);
+ 
+     // inp_pos - contains the positions
+@@ -208,7 +250,9 @@ llama_model_gemma4::graph::graph(const llama_model & model, const llm_graph_para
+ 
+     int64_t n_rows = n_tokens;
+ 
+-    for (int il = 0; il < n_layer; ++il) {
++    GGML_ASSERT((!pp || !prune_shared) && "pipeline stages are not supported with KV-shared layers");
++
++    for (int il = il_start; il < il_end; ++il) {
+         if (prune_shared && il == (int) hparams.n_layer_kv_from_start) {
+             inpL    = ggml_get_rows(ctx0, inpL, inp_out_ids);
+             inp_pos = ggml_reshape_1d(ctx0, ggml_get_rows(ctx0, ggml_reshape_2d(ctx0, inp_pos, 1, n_tokens), inp_out_ids), n_outputs);
+@@ -446,6 +490,20 @@ llama_model_gemma4::graph::graph(const llama_model & model, const llm_graph_para
+     }
+     cur = inpL;
+ 
++    if (!pp_last) {
++        // intermediate pipeline stage: output the residual stream (before output_norm) as the embeddings,
++        // one row per output token; the next stage feeds it back in through llama_batch.embd
++        // note: in a full model the rows are selected at the last layer (crop_before_nextn); an intermediate
++        //       stage never reaches that layer, so select them here (inp_out_ids must be used by the graph)
++        if (inp_out_ids) {
++            cur = ggml_get_rows(ctx0, cur, inp_out_ids);
++        }
++        cb(cur, "pp_hidden", -1);
++        res->t_embd = cur;
++        ggml_build_forward_expand(gf, cur);
++        return;
++    }
++
+     cur = build_norm(cur,
+             model.output_norm, nullptr,
+             LLM_NORM_RMS, -1);
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index 6a6592c7b..22f5e6f69 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -27,6 +27,7 @@ else()
+         add_subdirectory(server)
+     endif()
+     add_subdirectory(tokenize)
++    add_subdirectory(stage-test)
+     add_subdirectory(tts)
+     add_subdirectory(mtmd)
+     if (GGML_RPC)
+diff --git a/tools/stage-test/CMakeLists.txt b/tools/stage-test/CMakeLists.txt
+new file mode 100644
+index 000000000..c6d7e094d
+--- /dev/null
++++ b/tools/stage-test/CMakeLists.txt
+@@ -0,0 +1,7 @@
++set(TARGET llama-stage-test)
++add_executable(${TARGET} stage-test.cpp)
++if(LLAMA_TOOLS_INSTALL)
++    install(TARGETS ${TARGET} RUNTIME)
++endif()
++target_link_libraries(${TARGET} PRIVATE llama ${CMAKE_THREAD_LIBS_INIT})
++target_compile_features(${TARGET} PRIVATE cxx_std_17)
+diff --git a/tools/stage-test/stage-test.cpp b/tools/stage-test/stage-test.cpp
+new file mode 100644
+index 000000000..86cda87fc
+--- /dev/null
++++ b/tools/stage-test/stage-test.cpp
+@@ -0,0 +1,386 @@
++// llama-stage-test: check that a gemma4 model run as two pipeline stages
++// (stage A = layers [0, S), stage B = layers [S, N)) produces the same logits as the full model.
++//
++//   mode "ref"   : load the full model, run the prompt + greedy generation, save reference logits
++//   mode "split" : load stage A and stage B, feed the reference tokens through A -> hidden -> B, compare
++//   mode "both"  : ref, then split (the full model is freed before the stages are loaded)
++//
++// usage: llama-stage-test -m model.gguf [-s split_layer] [-p prompt] [-n n_gen] [-t threads]
++//                         [--mode both|ref|split] [--ref file] [-c n_ctx] [--load-mode dio|mmap|none]
++
++#include "llama.h"
++
++#include <algorithm>
++#include <chrono>
++#include <cmath>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <fstream>
++#include <string>
++#include <vector>
++
++struct opts_t {
++    std::string model;
++    int         split     = -1; // default: n_layer / 2
++    // gemma4 chat format (special tokens are parsed), thinking disabled
++    std::string prompt    = "<|turn>user\nExplain in three sentences why pipeline parallelism helps run large language "
++                            "models on small boards.<turn|>\n<|turn>model\n<|channel>thought\n<channel|>";
++    int         n_gen     = 32;
++    int         n_threads = 8;
++    int         n_ctx     = 1024;
++    std::string mode      = "both";
++    std::string ref       = "stage_ref.bin";
++    llama_load_mode load_mode = LLAMA_LOAD_MODE_DIRECT_IO;
++};
++
++static double now_s() {
++    using namespace std::chrono;
++    return duration<double>(steady_clock::now().time_since_epoch()).count();
++}
++
++static long rss_mib() {
++    std::ifstream f("/proc/self/status");
++    std::string line;
++    while (std::getline(f, line)) {
++        if (line.rfind("VmRSS:", 0) == 0) {
++            return std::atol(line.c_str() + 6) / 1024;
++        }
++    }
++    return -1;
++}
++
++static void die(const char * msg) {
++    fprintf(stderr, "error: %s\n", msg);
++    exit(1);
++}
++
++static llama_model * load_model(const opts_t & o, int layer_start, int layer_end, const char * name) {
++    llama_model_params mp = llama_model_default_params();
++    mp.load_mode   = o.load_mode;
++    mp.layer_start = layer_start;
++    mp.layer_end   = layer_end;
++    const double t0 = now_s();
++    llama_model * m = llama_model_load_from_file(o.model.c_str(), mp);
++    if (!m) {
++        die("failed to load model");
++    }
++    printf("[load] %-8s layers [%d, %d)  %.1f s  rss %ld MiB\n", name, layer_start, layer_end < 0 ? llama_model_n_layer(m) : layer_end, now_s() - t0, rss_mib());
++    fflush(stdout);
++    return m;
++}
++
++static llama_context * make_ctx(const opts_t & o, llama_model * m, bool embeddings) {
++    llama_context_params cp = llama_context_default_params();
++    cp.n_ctx           = o.n_ctx;
++    cp.n_batch         = o.n_ctx;
++    cp.n_ubatch        = 512;
++    cp.n_seq_max       = 1;
++    cp.n_threads       = o.n_threads;
++    cp.n_threads_batch = o.n_threads;
++    cp.embeddings      = embeddings;
++    cp.pooling_type    = LLAMA_POOLING_TYPE_NONE;
++    llama_context * c = llama_init_from_model(m, cp);
++    if (!c) {
++        die("failed to create context");
++    }
++    return c;
++}
++
++// batch of token ids, all positions output
++static void fill_tok_batch(llama_batch & b, const llama_token * toks, int n, int pos0) {
++    b.n_tokens = n;
++    for (int i = 0; i < n; ++i) {
++        b.token[i]     = toks[i];
++        b.pos[i]       = pos0 + i;
++        b.n_seq_id[i]  = 1;
++        b.seq_id[i][0] = 0;
++        b.logits[i]    = 1;
++    }
++}
++
++// batch of embeddings (n x n_embd, row-major), all positions output
++static void fill_embd_batch(llama_batch & b, const float * embd, int n, int n_embd, int pos0) {
++    b.n_tokens = n;
++    memcpy(b.embd, embd, sizeof(float) * (size_t) n * n_embd);
++    for (int i = 0; i < n; ++i) {
++        b.pos[i]       = pos0 + i;
++        b.n_seq_id[i]  = 1;
++        b.seq_id[i][0] = 0;
++        b.logits[i]    = 1;
++    }
++}
++
++static int argmax(const float * v, int n) {
++    return (int) (std::max_element(v, v + n) - v);
++}
++
++static std::string piece(const llama_vocab * vocab, llama_token t) {
++    char buf[256];
++    const int n = llama_token_to_piece(vocab, t, buf, sizeof(buf), 0, true);
++    return n > 0 ? std::string(buf, n) : std::string();
++}
++
++struct ref_t {
++    int32_t n_vocab = 0;
++    int32_t n_layer = 0;
++    int32_t n_embd  = 0;
++    std::vector<int32_t> prompt;
++    std::vector<int32_t> gen;     // gen[0] = argmax(last prompt row), gen[i+1] = argmax(G[i])
++    std::vector<float>   L;       // prompt rows   [n_prompt x n_vocab]
++    std::vector<float>   G;       // gen rows      [n_gen    x n_vocab], logits after feeding gen[i]
++};
++
++static void save_ref(const ref_t & r, const std::string & path) {
++    FILE * f = fopen(path.c_str(), "wb");
++    if (!f) die("cannot write ref file");
++    const int32_t hdr[5] = { r.n_vocab, (int32_t) r.prompt.size(), (int32_t) r.gen.size(), r.n_layer, r.n_embd };
++    fwrite(hdr, sizeof(hdr), 1, f);
++    fwrite(r.prompt.data(), sizeof(int32_t), r.prompt.size(), f);
++    fwrite(r.gen.data(),    sizeof(int32_t), r.gen.size(),    f);
++    fwrite(r.L.data(),      sizeof(float),   r.L.size(),      f);
++    fwrite(r.G.data(),      sizeof(float),   r.G.size(),      f);
++    fclose(f);
++}
++
++static ref_t load_ref(const std::string & path) {
++    ref_t r;
++    FILE * f = fopen(path.c_str(), "rb");
++    if (!f) die("cannot read ref file");
++    int32_t hdr[5];
++    if (fread(hdr, sizeof(hdr), 1, f) != 1) die("bad ref file");
++    r.n_vocab = hdr[0];
++    r.n_layer = hdr[3];
++    r.n_embd  = hdr[4];
++    r.prompt.resize(hdr[1]);
++    r.gen.resize(hdr[2]);
++    r.L.resize((size_t) hdr[1] * hdr[0]);
++    r.G.resize((size_t) hdr[2] * hdr[0]);
++    bool ok = fread(r.prompt.data(), sizeof(int32_t), r.prompt.size(), f) == r.prompt.size() &&
++              fread(r.gen.data(),    sizeof(int32_t), r.gen.size(),    f) == r.gen.size() &&
++              fread(r.L.data(),      sizeof(float),   r.L.size(),      f) == r.L.size() &&
++              fread(r.G.data(),      sizeof(float),   r.G.size(),      f) == r.G.size();
++    fclose(f);
++    if (!ok) die("truncated ref file");
++    return r;
++}
++
++static void run_ref(const opts_t & o, ref_t & r) {
++    llama_model * m = load_model(o, 0, -1, "full");
++    const llama_vocab * vocab = llama_model_get_vocab(m);
++    r.n_vocab = llama_vocab_n_tokens(vocab);
++    r.n_layer = llama_model_n_layer(m);
++    r.n_embd  = llama_model_n_embd(m);
++
++    std::vector<llama_token> toks(o.prompt.size() + 16);
++    const int n = llama_tokenize(vocab, o.prompt.c_str(), (int) o.prompt.size(), toks.data(), (int) toks.size(), true, true);
++    if (n <= 0) die("tokenize failed");
++    toks.resize(n);
++    r.prompt.assign(toks.begin(), toks.end());
++
++    llama_context * c = make_ctx(o, m, false);
++    llama_batch b = llama_batch_init(std::max(n, 1), 0, 1);
++
++    double t0 = now_s();
++    fill_tok_batch(b, toks.data(), n, 0);
++    if (llama_decode(c, b) != 0) die("decode (full prefill) failed");
++    const double t_pp = now_s() - t0;
++
++    r.L.resize((size_t) n * r.n_vocab);
++    for (int i = 0; i < n; ++i) {
++        memcpy(&r.L[(size_t) i * r.n_vocab], llama_get_logits_ith(c, i), sizeof(float) * r.n_vocab);
++    }
++
++    r.gen.clear();
++    r.G.resize((size_t) o.n_gen * r.n_vocab);
++    llama_token next = argmax(&r.L[(size_t) (n - 1) * r.n_vocab], r.n_vocab);
++    t0 = now_s();
++    for (int i = 0; i < o.n_gen; ++i) {
++        r.gen.push_back(next);
++        fill_tok_batch(b, &next, 1, n + i);
++        if (llama_decode(c, b) != 0) die("decode (full gen) failed");
++        const float * lg = llama_get_logits_ith(c, 0);
++        memcpy(&r.G[(size_t) i * r.n_vocab], lg, sizeof(float) * r.n_vocab);
++        next = argmax(lg, r.n_vocab);
++    }
++    const double t_tg = now_s() - t0;
++
++    std::string text;
++    for (auto t : r.gen) text += piece(vocab, t);
++    printf("[full] prompt %d tok, prefill %.2f s (%.2f t/s), gen %d tok %.2f s (%.2f t/s)\n",
++            n, t_pp, n / t_pp, o.n_gen, t_tg, o.n_gen / t_tg);
++    printf("[full] generated: %s\n", text.c_str());
++    fflush(stdout);
++
++    llama_batch_free(b);
++    llama_free(c);
++    llama_model_free(m);
++}
++
++struct diff_t {
++    double max_abs = 0.0, sum_sq = 0.0, max_ref = 0.0;
++    int    top1_ref = -1, top1_new = -1;
++};
++
++static diff_t compare_row(const float * ref, const float * got, int n) {
++    diff_t d;
++    for (int i = 0; i < n; ++i) {
++        const double e = std::fabs((double) ref[i] - (double) got[i]);
++        d.max_abs = std::max(d.max_abs, e);
++        d.sum_sq += e * e;
++        d.max_ref = std::max(d.max_ref, (double) std::fabs(ref[i]));
++    }
++    d.top1_ref = argmax(ref, n);
++    d.top1_new = argmax(got, n);
++    return d;
++}
++
++static int run_split(const opts_t & o, const ref_t & r) {
++    // layer count and width come from the reference (a vocab-only load does not report them)
++    llama_model_params mpv = llama_model_default_params();
++    mpv.vocab_only = true;
++    llama_model * mv = llama_model_load_from_file(o.model.c_str(), mpv);
++    if (!mv) die("failed to load vocab");
++    const int n_layer = r.n_layer;
++    const int n_embd  = r.n_embd;
++    if (n_layer <= 0 || n_embd <= 0) die("reference file has no layer count; regenerate it with --mode ref");
++    const llama_vocab * vocab = llama_model_get_vocab(mv);
++    const int S = o.split > 0 ? o.split : n_layer / 2;
++    if (S <= 0 || S >= n_layer) die("split must be in (0, n_layer)");
++    printf("[split] n_layer %d, n_embd %d, stage A = [0, %d), stage B = [%d, %d)\n", n_layer, n_embd, S, S, n_layer);
++
++    llama_model * mA = load_model(o, 0, S, "stage A");
++    const long rss_A = rss_mib();
++    llama_model * mB = load_model(o, S, n_layer, "stage B");
++    const long rss_AB = rss_mib();
++    printf("[mem] stage A ~%ld MiB, stage B ~%ld MiB (process RSS deltas)\n", rss_A, rss_AB - rss_A);
++
++    llama_context * cA = make_ctx(o, mA, true);
++    llama_context * cB = make_ctx(o, mB, false);
++
++    const int n  = (int) r.prompt.size();
++    const int nv = r.n_vocab;
++    if (llama_vocab_n_tokens(vocab) != nv) die("vocab size mismatch with ref");
++
++    llama_batch bA = llama_batch_init(std::max(n, 1), 0, 1);
++    llama_batch bB = llama_batch_init(std::max(n, 1), n_embd, 1);
++    std::vector<float> hidden((size_t) std::max(n, 1) * n_embd);
++
++    int    n_rows = 0, n_top1 = 0;
++    double worst = 0.0, worst_rel = 0.0, sum_sq = 0.0;
++    double tA = 0.0, tB = 0.0;
++
++    auto check = [&](const float * ref_row, const float * got_row, const char * tag, int idx) {
++        const diff_t d = compare_row(ref_row, got_row, nv);
++        n_rows++;
++        n_top1 += d.top1_ref == d.top1_new;
++        worst = std::max(worst, d.max_abs);
++        worst_rel = std::max(worst_rel, d.max_abs / std::max(d.max_ref, 1e-9));
++        sum_sq += d.sum_sq;
++        if (d.top1_ref != d.top1_new || idx < 2 || idx == n - 1) {
++            printf("  %-6s %3d  max_abs %.3e  rms %.3e  top1 ref %6d new %6d %s\n", tag, idx, d.max_abs,
++                    std::sqrt(d.sum_sq / nv), d.top1_ref, d.top1_new, d.top1_ref == d.top1_new ? "" : "<-- MISMATCH");
++        }
++    };
++
++    // prefill: tokens -> A -> hidden -> B -> logits
++    double t0 = now_s();
++    fill_tok_batch(bA, r.prompt.data(), n, 0);
++    if (llama_decode(cA, bA) != 0) die("decode (A prefill) failed");
++    for (int i = 0; i < n; ++i) {
++        const float * e = llama_get_embeddings_ith(cA, i);
++        if (!e) die("stage A returned no embeddings");
++        memcpy(&hidden[(size_t) i * n_embd], e, sizeof(float) * n_embd);
++    }
++    const double tA_pp = now_s() - t0;
++    t0 = now_s();
++    fill_embd_batch(bB, hidden.data(), n, n_embd, 0);
++    if (llama_decode(cB, bB) != 0) die("decode (B prefill) failed");
++    const double tB_pp = now_s() - t0;
++
++    printf("[split] prefill %d tok: stage A %.2f s, stage B %.2f s\n", n, tA_pp, tB_pp);
++    for (int i = 0; i < n; ++i) {
++        check(&r.L[(size_t) i * nv], llama_get_logits_ith(cB, i), "prompt", i);
++    }
++
++    // generation, teacher-forced with the reference tokens
++    std::string text;
++    int n_gen_match = 0;
++    for (size_t i = 0; i < r.gen.size(); ++i) {
++        const llama_token t = r.gen[i];
++        t0 = now_s();
++        fill_tok_batch(bA, &t, 1, n + (int) i);
++        if (llama_decode(cA, bA) != 0) die("decode (A gen) failed");
++        memcpy(hidden.data(), llama_get_embeddings_ith(cA, 0), sizeof(float) * n_embd);
++        tA += now_s() - t0;
++        t0 = now_s();
++        fill_embd_batch(bB, hidden.data(), 1, n_embd, n + (int) i);
++        if (llama_decode(cB, bB) != 0) die("decode (B gen) failed");
++        tB += now_s() - t0;
++        const float * lg = llama_get_logits_ith(cB, 0);
++        check(&r.G[i * nv], lg, "gen", (int) i);
++        const int own = argmax(lg, nv);
++        if (i + 1 < r.gen.size()) {
++            n_gen_match += own == r.gen[i + 1];
++        }
++        text += piece(vocab, own);
++    }
++
++    const int n_gen = (int) r.gen.size();
++    printf("[split] gen %d tok: stage A %.3f s/tok, stage B %.3f s/tok (sum %.2f t/s)\n",
++            n_gen, tA / std::max(n_gen, 1), tB / std::max(n_gen, 1), n_gen / std::max(tA + tB, 1e-9));
++    printf("[split] own greedy continuation: %s\n", text.c_str());
++    printf("[result] rows %d  top1 agree %d/%d  next-token agree %d/%d  worst max_abs %.3e  worst rel %.3e  rms %.3e\n",
++            n_rows, n_top1, n_rows, n_gen_match, std::max(n_gen - 1, 0), worst, worst_rel, std::sqrt(sum_sq / ((double) n_rows * nv)));
++    const bool pass = n_top1 == n_rows && worst < 1e-3 * std::max(1.0, 1.0);
++    printf("[result] %s (criteria: all top1 agree and worst max_abs < 1e-3)\n", pass ? "PASS" : "FAIL");
++
++    llama_batch_free(bA);
++    llama_batch_free(bB);
++    llama_free(cA);
++    llama_free(cB);
++    llama_model_free(mA);
++    llama_model_free(mB);
++    llama_model_free(mv);
++    return pass ? 0 : 2;
++}
++
++int main(int argc, char ** argv) {
++    opts_t o;
++    for (int i = 1; i < argc; ++i) {
++        const std::string a = argv[i];
++        auto next = [&]() -> std::string { if (i + 1 >= argc) die(("missing value for " + a).c_str()); return argv[++i]; };
++        if      (a == "-m")          o.model     = next();
++        else if (a == "-s")          o.split     = std::atoi(next().c_str());
++        else if (a == "-p")          o.prompt    = next();
++        else if (a == "-n")          o.n_gen     = std::atoi(next().c_str());
++        else if (a == "-t")          o.n_threads = std::atoi(next().c_str());
++        else if (a == "-c")          o.n_ctx     = std::atoi(next().c_str());
++        else if (a == "--mode")      o.mode      = next();
++        else if (a == "--ref")       o.ref       = next();
++        else if (a == "--load-mode") {
++            const std::string v = next();
++            o.load_mode = v == "mmap" ? LLAMA_LOAD_MODE_MMAP : v == "none" ? LLAMA_LOAD_MODE_NONE : LLAMA_LOAD_MODE_DIRECT_IO;
++        } else {
++            fprintf(stderr, "unknown argument: %s\n", a.c_str());
++            return 1;
++        }
++    }
++    if (o.model.empty()) die("-m model.gguf is required");
++
++    llama_backend_init();
++
++    int rc = 0;
++    if (o.mode == "ref" || o.mode == "both") {
++        ref_t r;
++        run_ref(o, r);
++        save_ref(r, o.ref);
++        printf("[ref] saved %s\n", o.ref.c_str());
++    }
++    if (o.mode == "split" || o.mode == "both") {
++        rc = run_split(o, load_ref(o.ref));
++    }
++
++    llama_backend_free();
++    return rc;
++}

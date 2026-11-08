@@ -1,0 +1,31 @@
+[load] full     layers [0, 30)  435.5 s  rss 14788 MiB
+[full] prompt 29 tok, prefill 0.64 s (45.03 t/s), gen 32 tok 2.37 s (13.50 t/s)
+[full] generated: Pipeline parallelism divides a large model into smaller sequential stages, allowing each stage to be loaded onto a different device. This distribution ensures that no single board needs to hold
+[ref] saved /tmp/stage_ref_26b.bin
+[split] n_layer 30, n_embd 2816, stage A = [0, 15), stage B = [15, 30)
+[load] stage A  layers [0, 15)  216.5 s  rss 7623 MiB
+[load] stage B  layers [15, 30)  217.0 s  rss 15054 MiB
+[mem] stage A ~7623 MiB, stage B ~7431 MiB (process RSS deltas)
+[New LWP 39084]
+[New LWP 39083]
+[New LWP 39082]
+[New LWP 39081]
+[New LWP 39080]
+[New LWP 39079]
+[New LWP 39078]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/aarch64-linux-gnu/libthread_db.so.1".
+0x0000ffff9e977a34 in wait4 () from /lib/aarch64-linux-gnu/libc.so.6
+#0  0x0000ffff9e977a34 in wait4 () from /lib/aarch64-linux-gnu/libc.so.6
+#1  0x0000ffff9e7a3b34 in ggml_print_backtrace () from /home/orangepi/llama.cpp-pp/build-pp/bin/libggml-base.so.0
+#2  0x0000ffff9e7a3cdc in ggml_abort () from /home/orangepi/llama.cpp-pp/build-pp/bin/libggml-base.so.0
+#3  0x0000ffff9e7bb578 in ggml_backend_buffer_get_type () from /home/orangepi/llama.cpp-pp/build-pp/bin/libggml-base.so.0
+#4  0x0000ffff9e7bb5d0 in ggml_backend_buffer_is_host () from /home/orangepi/llama.cpp-pp/build-pp/bin/libggml-base.so.0
+#5  0x0000ffff9f03b954 in llm_graph_input_out_ids::set_input(llama_ubatch const*) () from /home/orangepi/llama.cpp-pp/build-pp/bin/libllama.so.0
+#6  0x0000ffff9f041ccc in llm_graph_result::set_inputs(llama_ubatch const*) () from /home/orangepi/llama.cpp-pp/build-pp/bin/libllama.so.0
+#7  0x0000ffff9f006dbc in llama_context::process_ubatch(llama_ubatch const&, llm_graph_type, llama_memory_context_i*, ggml_status&) () from /home/orangepi/llama.cpp-pp/build-pp/bin/libllama.so.0
+#8  0x0000ffff9f011440 in llama_context::decode(llama_batch_ext const&) () from /home/orangepi/llama.cpp-pp/build-pp/bin/libllama.so.0
+#9  0x0000ffff9f012c60 in llama_context::decode(llama_batch const&) () from /home/orangepi/llama.cpp-pp/build-pp/bin/libllama.so.0
+#10 0x0000ffff9f012ce0 in llama_decode () from /home/orangepi/llama.cpp-pp/build-pp/bin/libllama.so.0
+#11 0x0000aaaae321303c in main ()
+[Inferior 1 (process 38600) detached]

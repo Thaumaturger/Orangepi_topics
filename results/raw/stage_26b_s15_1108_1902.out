@@ -1,0 +1,4 @@
+[load] full     layers [0, 30)  433.4 s  rss 14788 MiB
+[full] prompt 26 tok, prefill 0.61 s (42.73 t/s), gen 32 tok 2.33 s (13.75 t/s)
+[full] generated:  actually way or way or way or way or way or way or way or way or way or way or way or way or way or way or way or way
+[ref] saved /tmp/stage_ref_26b.bin

@@ -1,0 +1,10 @@
+# node: node1
+# commit: 330f0189c
+# start: 2026-11-08T18:41:29+00:00
+# governor: performance 
+# mem: used=6781M cache=398M avail=24900M swap_used=82M 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-batched-bench -m models/gemma-4-31B-it-Q4_0.gguf -c 4096 -npp 128 -ntg 32 -npl 1,1,4,8,12,16 -lm dio -t 8 > results/bb_t8_1108_1841.out
+0.00.424.956 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.425.026 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden
+0.00.433.569 W load: '</s>' is a normal token here, removing it from EOG list
+# exit=0 end: 2026-11-08T18:58:54+00:00
