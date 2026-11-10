@@ -1,0 +1,61 @@
+# node1 -> node2 direct 5G, EEE on both ends
+# date: 2026-11-10T16:49:24+00:00
+netlink error: Operation not permitted
+# link:  Speed: 5000Mb/s  EEE:  EEE status: enabled - active
+=== ping -c 20 -s 10752
+PING 10.0.0.2 (10.0.0.2) 10752(10780) bytes of data.
+10760 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=0.842 ms
+10760 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.424 ms
+10760 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=0.418 ms
+10760 bytes from 10.0.0.2: icmp_seq=4 ttl=64 time=0.426 ms
+10760 bytes from 10.0.0.2: icmp_seq=5 ttl=64 time=0.434 ms
+10760 bytes from 10.0.0.2: icmp_seq=6 ttl=64 time=0.215 ms
+10760 bytes from 10.0.0.2: icmp_seq=7 ttl=64 time=0.260 ms
+10760 bytes from 10.0.0.2: icmp_seq=8 ttl=64 time=0.438 ms
+10760 bytes from 10.0.0.2: icmp_seq=9 ttl=64 time=0.417 ms
+10760 bytes from 10.0.0.2: icmp_seq=10 ttl=64 time=0.427 ms
+10760 bytes from 10.0.0.2: icmp_seq=11 ttl=64 time=0.417 ms
+10760 bytes from 10.0.0.2: icmp_seq=12 ttl=64 time=0.427 ms
+10760 bytes from 10.0.0.2: icmp_seq=13 ttl=64 time=0.315 ms
+10760 bytes from 10.0.0.2: icmp_seq=14 ttl=64 time=0.342 ms
+10760 bytes from 10.0.0.2: icmp_seq=15 ttl=64 time=0.430 ms
+10760 bytes from 10.0.0.2: icmp_seq=16 ttl=64 time=0.412 ms
+10760 bytes from 10.0.0.2: icmp_seq=17 ttl=64 time=0.396 ms
+10760 bytes from 10.0.0.2: icmp_seq=18 ttl=64 time=0.433 ms
+10760 bytes from 10.0.0.2: icmp_seq=19 ttl=64 time=0.428 ms
+10760 bytes from 10.0.0.2: icmp_seq=20 ttl=64 time=0.324 ms
+
+--- 10.0.0.2 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3880ms
+rtt min/avg/max/mdev = 0.215/0.411/0.842/0.116 ms
+=== iperf3 -t 5
+Connecting to host 10.0.0.2, port 5201
+[  5] local 10.0.0.1 port 42452 connected to 10.0.0.2 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec   563 MBytes  4.73 Gbits/sec    0   1.43 MBytes       
+[  5]   1.00-2.00   sec   562 MBytes  4.71 Gbits/sec    0   1.58 MBytes       
+[  5]   2.00-3.00   sec   561 MBytes  4.71 Gbits/sec    0   1.58 MBytes       
+[  5]   3.00-4.00   sec   561 MBytes  4.71 Gbits/sec    0   1.58 MBytes       
+[  5]   4.00-5.00   sec   562 MBytes  4.71 Gbits/sec    0   1.66 MBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec  2.74 GBytes  4.71 Gbits/sec    0             sender
+[  5]   0.00-5.00   sec  2.74 GBytes  4.70 Gbits/sec                  receiver
+
+iperf Done.
+=== iperf3 -t 5 -R
+Connecting to host 10.0.0.2, port 5201
+Reverse mode, remote host 10.0.0.2 is sending
+[  5] local 10.0.0.1 port 42456 connected to 10.0.0.2 port 5201
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-1.00   sec   560 MBytes  4.69 Gbits/sec                  
+[  5]   1.00-2.00   sec   561 MBytes  4.71 Gbits/sec                  
+[  5]   2.00-3.00   sec   561 MBytes  4.71 Gbits/sec                  
+[  5]   3.00-4.00   sec   562 MBytes  4.71 Gbits/sec                  
+[  5]   4.00-5.00   sec   561 MBytes  4.71 Gbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-5.00   sec  2.74 GBytes  4.71 Gbits/sec    0             sender
+[  5]   0.00-5.00   sec  2.74 GBytes  4.70 Gbits/sec                  receiver
+
+iperf Done.

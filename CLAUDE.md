@@ -30,7 +30,8 @@ node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llam
 - SoC：CIX P1（CD8160）。CPU：8 × Cortex-A720（2.2–2.6 GHz，編號 0、1、6–11）+ 4 × Cortex-A520（1.8 GHz，編號 2–5）。
 - 記憶體：系統可見 30 GiB，開機後可用約 24 GiB。
 - GPU：Mali-G720，Vulkan 驅動不支援整數點積，**比 CPU 慢，不使用**。
-- 網路：雙 5GbE（`enp49s0`、`enp97s0`），但目前對端設備只支援 100Mb/s（待換交換器）。
+- 網路：雙 5GbE（`enp49s0`、`enp97s0`，Realtek RTL8126，驅動 `r8126`）。`enp97s0` 接交換器（只支援 100Mb/s，待換），用於管理與上網。
+- node1 ↔ node2 以 `enp49s0` 直連：node1 `10.0.0.1`、node2 `10.0.0.2`（NetworkManager「Wired connection 1」，無閘道）。換新線後協商到 **5000Mb/s**，iperf3 單一串流 4.71 Gbit/s、0% 遺失（舊線在 2.5G 以上會大量掉封包）。EEE 維持預設開啟也穩定，全部是預設或永久設定，重開機後自動恢復。板子之間的資料傳輸請走 10.0.0.x。
 - 系統：Ubuntu 24.04、GCC 13.3。
 
 ---

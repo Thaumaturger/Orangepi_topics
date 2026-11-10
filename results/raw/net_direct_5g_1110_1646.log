@@ -1,0 +1,236 @@
+# node1 enp49s0 (10.0.0.1) -> node2 enp49s0 (10.0.0.2), direct cable (new cable)
+# date: 2026-11-10T16:46:00+00:00
+netlink error: Operation not permitted
+# link:  Speed: 5000Mb/s  Duplex: Full   EEE:  EEE status: disabled
+# governor: schedutil 
+# mtu: 1500
+=== ping -c 50 -i 0.2 (56 B)
+PING 10.0.0.2 (10.0.0.2) 56(84) bytes of data.
+64 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=0.252 ms
+64 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.372 ms
+64 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=0.335 ms
+64 bytes from 10.0.0.2: icmp_seq=4 ttl=64 time=0.354 ms
+64 bytes from 10.0.0.2: icmp_seq=5 ttl=64 time=0.229 ms
+64 bytes from 10.0.0.2: icmp_seq=6 ttl=64 time=0.343 ms
+64 bytes from 10.0.0.2: icmp_seq=7 ttl=64 time=0.341 ms
+64 bytes from 10.0.0.2: icmp_seq=8 ttl=64 time=0.372 ms
+64 bytes from 10.0.0.2: icmp_seq=9 ttl=64 time=0.171 ms
+64 bytes from 10.0.0.2: icmp_seq=10 ttl=64 time=0.343 ms
+64 bytes from 10.0.0.2: icmp_seq=11 ttl=64 time=0.339 ms
+64 bytes from 10.0.0.2: icmp_seq=12 ttl=64 time=0.350 ms
+64 bytes from 10.0.0.2: icmp_seq=13 ttl=64 time=0.338 ms
+64 bytes from 10.0.0.2: icmp_seq=14 ttl=64 time=0.345 ms
+64 bytes from 10.0.0.2: icmp_seq=15 ttl=64 time=0.346 ms
+64 bytes from 10.0.0.2: icmp_seq=16 ttl=64 time=0.325 ms
+64 bytes from 10.0.0.2: icmp_seq=17 ttl=64 time=0.330 ms
+64 bytes from 10.0.0.2: icmp_seq=18 ttl=64 time=0.237 ms
+64 bytes from 10.0.0.2: icmp_seq=19 ttl=64 time=0.327 ms
+64 bytes from 10.0.0.2: icmp_seq=20 ttl=64 time=0.352 ms
+64 bytes from 10.0.0.2: icmp_seq=21 ttl=64 time=0.336 ms
+64 bytes from 10.0.0.2: icmp_seq=22 ttl=64 time=0.349 ms
+64 bytes from 10.0.0.2: icmp_seq=23 ttl=64 time=0.339 ms
+64 bytes from 10.0.0.2: icmp_seq=24 ttl=64 time=0.339 ms
+64 bytes from 10.0.0.2: icmp_seq=25 ttl=64 time=0.353 ms
+64 bytes from 10.0.0.2: icmp_seq=26 ttl=64 time=0.336 ms
+64 bytes from 10.0.0.2: icmp_seq=27 ttl=64 time=0.352 ms
+64 bytes from 10.0.0.2: icmp_seq=28 ttl=64 time=0.328 ms
+64 bytes from 10.0.0.2: icmp_seq=29 ttl=64 time=0.331 ms
+64 bytes from 10.0.0.2: icmp_seq=30 ttl=64 time=0.334 ms
+64 bytes from 10.0.0.2: icmp_seq=31 ttl=64 time=0.338 ms
+64 bytes from 10.0.0.2: icmp_seq=32 ttl=64 time=0.336 ms
+64 bytes from 10.0.0.2: icmp_seq=33 ttl=64 time=0.339 ms
+64 bytes from 10.0.0.2: icmp_seq=34 ttl=64 time=0.337 ms
+64 bytes from 10.0.0.2: icmp_seq=35 ttl=64 time=0.346 ms
+64 bytes from 10.0.0.2: icmp_seq=36 ttl=64 time=0.341 ms
+64 bytes from 10.0.0.2: icmp_seq=37 ttl=64 time=0.342 ms
+64 bytes from 10.0.0.2: icmp_seq=38 ttl=64 time=0.339 ms
+64 bytes from 10.0.0.2: icmp_seq=39 ttl=64 time=0.338 ms
+64 bytes from 10.0.0.2: icmp_seq=40 ttl=64 time=0.334 ms
+64 bytes from 10.0.0.2: icmp_seq=41 ttl=64 time=0.338 ms
+64 bytes from 10.0.0.2: icmp_seq=42 ttl=64 time=0.342 ms
+64 bytes from 10.0.0.2: icmp_seq=43 ttl=64 time=0.345 ms
+64 bytes from 10.0.0.2: icmp_seq=44 ttl=64 time=0.152 ms
+64 bytes from 10.0.0.2: icmp_seq=45 ttl=64 time=0.326 ms
+64 bytes from 10.0.0.2: icmp_seq=46 ttl=64 time=0.330 ms
+64 bytes from 10.0.0.2: icmp_seq=47 ttl=64 time=0.329 ms
+64 bytes from 10.0.0.2: icmp_seq=48 ttl=64 time=0.327 ms
+64 bytes from 10.0.0.2: icmp_seq=49 ttl=64 time=0.319 ms
+64 bytes from 10.0.0.2: icmp_seq=50 ttl=64 time=0.343 ms
+
+--- 10.0.0.2 ping statistics ---
+50 packets transmitted, 50 received, 0% packet loss, time 10016ms
+rtt min/avg/max/mdev = 0.152/0.326/0.372/0.042 ms
+=== ping -c 20 -s 10752
+PING 10.0.0.2 (10.0.0.2) 10752(10780) bytes of data.
+10760 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=1.33 ms
+10760 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.405 ms
+10760 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=0.388 ms
+10760 bytes from 10.0.0.2: icmp_seq=4 ttl=64 time=0.405 ms
+10760 bytes from 10.0.0.2: icmp_seq=5 ttl=64 time=0.389 ms
+10760 bytes from 10.0.0.2: icmp_seq=6 ttl=64 time=0.385 ms
+10760 bytes from 10.0.0.2: icmp_seq=7 ttl=64 time=0.382 ms
+10760 bytes from 10.0.0.2: icmp_seq=8 ttl=64 time=0.386 ms
+10760 bytes from 10.0.0.2: icmp_seq=9 ttl=64 time=0.387 ms
+10760 bytes from 10.0.0.2: icmp_seq=10 ttl=64 time=0.381 ms
+10760 bytes from 10.0.0.2: icmp_seq=11 ttl=64 time=0.432 ms
+10760 bytes from 10.0.0.2: icmp_seq=12 ttl=64 time=0.387 ms
+10760 bytes from 10.0.0.2: icmp_seq=13 ttl=64 time=0.399 ms
+10760 bytes from 10.0.0.2: icmp_seq=14 ttl=64 time=0.382 ms
+10760 bytes from 10.0.0.2: icmp_seq=15 ttl=64 time=0.370 ms
+10760 bytes from 10.0.0.2: icmp_seq=16 ttl=64 time=0.446 ms
+10760 bytes from 10.0.0.2: icmp_seq=17 ttl=64 time=0.387 ms
+10760 bytes from 10.0.0.2: icmp_seq=18 ttl=64 time=0.397 ms
+10760 bytes from 10.0.0.2: icmp_seq=19 ttl=64 time=0.399 ms
+10760 bytes from 10.0.0.2: icmp_seq=20 ttl=64 time=0.377 ms
+
+--- 10.0.0.2 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3871ms
+rtt min/avg/max/mdev = 0.370/0.440/1.332/0.205 ms
+=== ping -c 20 -s 21504
+PING 10.0.0.2 (10.0.0.2) 21504(21532) bytes of data.
+21512 bytes from 10.0.0.2: icmp_seq=1 ttl=64 time=0.373 ms
+21512 bytes from 10.0.0.2: icmp_seq=2 ttl=64 time=0.480 ms
+21512 bytes from 10.0.0.2: icmp_seq=3 ttl=64 time=0.456 ms
+21512 bytes from 10.0.0.2: icmp_seq=4 ttl=64 time=0.465 ms
+21512 bytes from 10.0.0.2: icmp_seq=5 ttl=64 time=0.453 ms
+21512 bytes from 10.0.0.2: icmp_seq=6 ttl=64 time=0.443 ms
+21512 bytes from 10.0.0.2: icmp_seq=7 ttl=64 time=0.449 ms
+21512 bytes from 10.0.0.2: icmp_seq=8 ttl=64 time=0.456 ms
+21512 bytes from 10.0.0.2: icmp_seq=9 ttl=64 time=0.456 ms
+21512 bytes from 10.0.0.2: icmp_seq=10 ttl=64 time=0.461 ms
+21512 bytes from 10.0.0.2: icmp_seq=11 ttl=64 time=0.446 ms
+21512 bytes from 10.0.0.2: icmp_seq=12 ttl=64 time=0.446 ms
+21512 bytes from 10.0.0.2: icmp_seq=13 ttl=64 time=0.450 ms
+21512 bytes from 10.0.0.2: icmp_seq=14 ttl=64 time=0.451 ms
+21512 bytes from 10.0.0.2: icmp_seq=15 ttl=64 time=0.444 ms
+21512 bytes from 10.0.0.2: icmp_seq=16 ttl=64 time=0.439 ms
+21512 bytes from 10.0.0.2: icmp_seq=17 ttl=64 time=0.443 ms
+21512 bytes from 10.0.0.2: icmp_seq=18 ttl=64 time=1.42 ms
+21512 bytes from 10.0.0.2: icmp_seq=19 ttl=64 time=0.439 ms
+21512 bytes from 10.0.0.2: icmp_seq=20 ttl=64 time=0.449 ms
+
+--- 10.0.0.2 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3871ms
+rtt min/avg/max/mdev = 0.373/0.495/1.416/0.212 ms
+=== iperf3 -t 10 (node1 -> node2)
+Connecting to host 10.0.0.2, port 5201
+[  5] local 10.0.0.1 port 47684 connected to 10.0.0.2 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec   564 MBytes  4.73 Gbits/sec    0   1.36 MBytes       
+[  5]   1.00-2.00   sec   561 MBytes  4.70 Gbits/sec    0   1.36 MBytes       
+[  5]   2.00-3.00   sec   561 MBytes  4.71 Gbits/sec    0   1.44 MBytes       
+[  5]   3.00-4.00   sec   562 MBytes  4.71 Gbits/sec    0   1.44 MBytes       
+[  5]   4.00-5.00   sec   561 MBytes  4.70 Gbits/sec    0   1.51 MBytes       
+[  5]   5.00-6.00   sec   561 MBytes  4.70 Gbits/sec    0   1.58 MBytes       
+[  5]   6.00-7.00   sec   561 MBytes  4.70 Gbits/sec    0   1.66 MBytes       
+[  5]   7.00-8.00   sec   562 MBytes  4.71 Gbits/sec    0   1.75 MBytes       
+[  5]   8.00-9.00   sec   560 MBytes  4.70 Gbits/sec    0   1.75 MBytes       
+[  5]   9.00-10.00  sec   562 MBytes  4.71 Gbits/sec    0   1.75 MBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  5.48 GBytes  4.71 Gbits/sec    0             sender
+[  5]   0.00-10.00  sec  5.48 GBytes  4.71 Gbits/sec                  receiver
+
+iperf Done.
+=== iperf3 -t 10 -R (node2 -> node1)
+Connecting to host 10.0.0.2, port 5201
+Reverse mode, remote host 10.0.0.2 is sending
+[  5] local 10.0.0.1 port 47346 connected to 10.0.0.2 port 5201
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-1.00   sec   560 MBytes  4.70 Gbits/sec                  
+[  5]   1.00-2.00   sec   562 MBytes  4.71 Gbits/sec                  
+[  5]   2.00-3.00   sec   561 MBytes  4.70 Gbits/sec                  
+[  5]   3.00-4.00   sec   561 MBytes  4.71 Gbits/sec                  
+[  5]   4.00-5.00   sec   561 MBytes  4.70 Gbits/sec                  
+[  5]   5.00-6.00   sec   561 MBytes  4.71 Gbits/sec                  
+[  5]   6.00-7.00   sec   561 MBytes  4.71 Gbits/sec                  
+[  5]   7.00-8.00   sec   560 MBytes  4.70 Gbits/sec                  
+[  5]   8.00-9.00   sec   562 MBytes  4.71 Gbits/sec                  
+[  5]   9.00-10.00  sec   561 MBytes  4.70 Gbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  5.48 GBytes  4.71 Gbits/sec    0             sender
+[  5]   0.00-10.00  sec  5.48 GBytes  4.70 Gbits/sec                  receiver
+
+iperf Done.
+=== iperf3 -t 10 -P 4 (node1 -> node2)
+Connecting to host 10.0.0.2, port 5201
+[  5] local 10.0.0.1 port 44800 connected to 10.0.0.2 port 5201
+[  7] local 10.0.0.1 port 44814 connected to 10.0.0.2 port 5201
+[  9] local 10.0.0.1 port 44818 connected to 10.0.0.2 port 5201
+[ 11] local 10.0.0.1 port 44834 connected to 10.0.0.2 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec   128 MBytes  1.08 Gbits/sec    0    686 KBytes       
+[  7]   0.00-1.00   sec   128 MBytes  1.07 Gbits/sec    0    670 KBytes       
+[  9]   0.00-1.00   sec   151 MBytes  1.27 Gbits/sec    0    730 KBytes       
+[ 11]   0.00-1.00   sec   167 MBytes  1.40 Gbits/sec    0    755 KBytes       
+[SUM]   0.00-1.00   sec   575 MBytes  4.82 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   1.00-2.00   sec   129 MBytes  1.08 Gbits/sec    0    686 KBytes       
+[  7]   1.00-2.00   sec   128 MBytes  1.07 Gbits/sec    0    670 KBytes       
+[  9]   1.00-2.00   sec   151 MBytes  1.27 Gbits/sec    0    730 KBytes       
+[ 11]   1.00-2.00   sec   152 MBytes  1.28 Gbits/sec    0    755 KBytes       
+[SUM]   1.00-2.00   sec   560 MBytes  4.70 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   2.00-3.00   sec   128 MBytes  1.07 Gbits/sec    0    686 KBytes       
+[  7]   2.00-3.00   sec   128 MBytes  1.07 Gbits/sec    0    670 KBytes       
+[  9]   2.00-3.00   sec   154 MBytes  1.29 Gbits/sec    0    730 KBytes       
+[ 11]   2.00-3.00   sec   153 MBytes  1.28 Gbits/sec    0    755 KBytes       
+[SUM]   2.00-3.00   sec   562 MBytes  4.71 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   3.00-4.00   sec   129 MBytes  1.08 Gbits/sec    0    686 KBytes       
+[  7]   3.00-4.00   sec   128 MBytes  1.07 Gbits/sec    0    670 KBytes       
+[  9]   3.00-4.00   sec   153 MBytes  1.28 Gbits/sec    0    766 KBytes       
+[ 11]   3.00-4.00   sec   152 MBytes  1.28 Gbits/sec    0    755 KBytes       
+[SUM]   3.00-4.00   sec   561 MBytes  4.71 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   4.00-5.00   sec   129 MBytes  1.08 Gbits/sec    0    686 KBytes       
+[  7]   4.00-5.00   sec   126 MBytes  1.06 Gbits/sec    0    670 KBytes       
+[  9]   4.00-5.00   sec   152 MBytes  1.27 Gbits/sec    0    806 KBytes       
+[ 11]   4.00-5.00   sec   152 MBytes  1.28 Gbits/sec    0    792 KBytes       
+[SUM]   4.00-5.00   sec   559 MBytes  4.69 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   5.00-6.00   sec   136 MBytes  1.14 Gbits/sec    0    686 KBytes       
+[  7]   5.00-6.00   sec   126 MBytes  1.06 Gbits/sec    0    670 KBytes       
+[  9]   5.00-6.00   sec   150 MBytes  1.26 Gbits/sec    0    806 KBytes       
+[ 11]   5.00-6.00   sec   151 MBytes  1.26 Gbits/sec    0    792 KBytes       
+[SUM]   5.00-6.00   sec   564 MBytes  4.71 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   6.00-7.00   sec   135 MBytes  1.13 Gbits/sec    0    686 KBytes       
+[  7]   6.00-7.00   sec   124 MBytes  1.05 Gbits/sec    0    670 KBytes       
+[  9]   6.00-7.00   sec   150 MBytes  1.26 Gbits/sec    0    806 KBytes       
+[ 11]   6.00-7.00   sec   150 MBytes  1.26 Gbits/sec    0    792 KBytes       
+[SUM]   6.00-7.00   sec   559 MBytes  4.70 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   7.00-8.00   sec   136 MBytes  1.14 Gbits/sec    0    686 KBytes       
+[  7]   7.00-8.00   sec   125 MBytes  1.05 Gbits/sec    0    670 KBytes       
+[  9]   7.00-8.00   sec   151 MBytes  1.27 Gbits/sec    0    806 KBytes       
+[ 11]   7.00-8.00   sec   150 MBytes  1.26 Gbits/sec    0    792 KBytes       
+[SUM]   7.00-8.00   sec   561 MBytes  4.71 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   8.00-9.00   sec   135 MBytes  1.13 Gbits/sec    0    686 KBytes       
+[  7]   8.00-9.00   sec   126 MBytes  1.06 Gbits/sec    0    670 KBytes       
+[  9]   8.00-9.00   sec   150 MBytes  1.26 Gbits/sec    0    806 KBytes       
+[ 11]   8.00-9.00   sec   151 MBytes  1.27 Gbits/sec    0    792 KBytes       
+[SUM]   8.00-9.00   sec   562 MBytes  4.72 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[  5]   9.00-10.00  sec   136 MBytes  1.14 Gbits/sec    0    720 KBytes       
+[  7]   9.00-10.00  sec   125 MBytes  1.04 Gbits/sec    0    670 KBytes       
+[  9]   9.00-10.00  sec   150 MBytes  1.26 Gbits/sec    0    806 KBytes       
+[ 11]   9.00-10.00  sec   150 MBytes  1.25 Gbits/sec    0    792 KBytes       
+[SUM]   9.00-10.00  sec   561 MBytes  4.70 Gbits/sec    0             
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  1.29 GBytes  1.11 Gbits/sec    0             sender
+[  5]   0.00-10.01  sec  1.29 GBytes  1.10 Gbits/sec                  receiver
+[  7]   0.00-10.00  sec  1.23 GBytes  1.06 Gbits/sec    0             sender
+[  7]   0.00-10.01  sec  1.23 GBytes  1.06 Gbits/sec                  receiver
+[  9]   0.00-10.00  sec  1.48 GBytes  1.27 Gbits/sec    0             sender
+[  9]   0.00-10.01  sec  1.47 GBytes  1.27 Gbits/sec                  receiver
+[ 11]   0.00-10.00  sec  1.49 GBytes  1.28 Gbits/sec    0             sender
+[ 11]   0.00-10.01  sec  1.49 GBytes  1.28 Gbits/sec                  receiver
+[SUM]   0.00-10.00  sec  5.49 GBytes  4.72 Gbits/sec    0             sender
+[SUM]   0.00-10.01  sec  5.48 GBytes  4.71 Gbits/sec                  receiver
+
+iperf Done.
+# end: 2026-11-10T16:46:48+00:00
