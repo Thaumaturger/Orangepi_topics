@@ -81,6 +81,7 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 31B 單板 KV 上限 | 約 6–7 GB；c=65536 成功，c=131072 記憶體不足 |
 | 31B 模型參數 | 60 層、hidden size 5376、Q4_0 約 17 GB |
 | 31B 跨板兩段（node1 0–30 層 → 5G 直連 → node2 30–60 層） | 與單板逐位元相同；每 token 前段 0.227 s + 後段 0.271 s + 網路 0.001 s = 2.00 t/s（B=1，未流水）；每板 RSS 約 9.4 GB，剩約 15 GB（`results/6.7_cross_board_pp.md`） |
+| 31B 跨板流水（`performance`） | 1x1 2.10 t/s → 2 個請求流水 2x2 **3.83 t/s**（1.82 倍）。batch > 1 的組態無效：前段 `embeddings=true` 讓 llama.cpp 逐序列拆 ubatch，下次前段要設 `kv_unified=true` 重測（`results/6.8_pipeline_sweep.md`） |
 
 ---
 

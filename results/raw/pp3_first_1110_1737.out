@@ -1,0 +1,14 @@
+[load] first layers [0, 30)  269.3 s  rss 9455 MiB
+[ctx] n_ctx 8192, n_seq_max 32, rss 13008 MiB
+[first] connecting to 10.0.0.2:9000 ...
+[first] connected
+[verify] rows 61  top1 agree 61/61  worst max_abs 0.000e+00  -> PASS
+[config  1x1] R  1  M 1  per-mb  1  gen 32 tok/seq  time 15.20 s  -> 2.10 t/s total, 2.105 t/s per seq  | busy A 46%  B 54%  | prefill 2.2 s | seq0 vs ref 32/32
+[config  2x2] R  2  M 2  per-mb  1  gen 32 tok/seq  time 16.70 s  -> 3.83 t/s total, 1.916 t/s per seq  | busy A 83%  B 99%  | prefill 4.4 s | seq0 vs ref 32/32
+[config  4x1] R  4  M 1  per-mb  4  gen 32 tok/seq  time 36.25 s  -> 3.53 t/s total, 0.883 t/s per seq  | busy A 76%  B 24%  | prefill 8.0 s | seq0 vs ref 32/32
+[config  8x1] R  8  M 1  per-mb  8  gen 32 tok/seq  time 70.03 s  -> 3.66 t/s total, 0.457 t/s per seq  | busy A 79%  B 21%  | prefill 16.0 s | seq0 vs ref 32/32
+[config  8x2] R  8  M 2  per-mb  4  gen 32 tok/seq  time 55.38 s  -> 4.62 t/s total, 0.578 t/s per seq  | busy A 100%  B 31%  | prefill 16.0 s | seq0 vs ref 32/32
+[config 16x1] R 16  M 1  per-mb 16  gen 32 tok/seq  time 132.28 s  -> 3.87 t/s total, 0.242 t/s per seq  | busy A 83%  B 17%  | prefill 31.8 s | seq0 vs ref 32/32
+[config 16x2] R 16  M 2  per-mb  8  gen 32 tok/seq  time 110.65 s  -> 4.63 t/s total, 0.289 t/s per seq  | busy A 100%  B 27%  | prefill 32.0 s | seq0 vs ref 32/32
+[config 32x1] R 32  M 1  per-mb 32  gen 32 tok/seq  time 264.18 s  -> 3.88 t/s total, 0.121 t/s per seq  | busy A 83%  B 17%  | prefill 63.6 s | seq0 vs ref 32/32
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 221.12 s  -> 4.63 t/s total, 0.145 t/s per seq  | busy A 100%  B 20%  | prefill 63.5 s | seq0 vs ref 32/32
