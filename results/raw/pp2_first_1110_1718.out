@@ -1,0 +1,8 @@
+[load] first layers [0, 30)  275.6 s  rss 9455 MiB
+[first] connecting to 10.0.0.2:9000 ...
+[first] connected
+[verify] prefill 29 tok: stage A 1.196 s, round trip 1.580 s (stage B 1.525 s, network+copy 0.055 s)
+[verify] rows 61  top1 agree 61/61  worst max_abs 0.000e+00  -> PASS
+[timing] prefill 29 tok: stage A 1.206 s, stage B 1.516 s, network+copy 0.0021 s
+[timing] gen 64 tok: per token  stage A 0.2266 s  stage B 0.2712 s  network+copy 0.0010 s  total 0.4988 s  (2.00 t/s)
+[timing] greedy tokens matching the single-board reference: 32/32

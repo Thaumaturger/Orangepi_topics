@@ -1,0 +1,4 @@
+[load] last layers [30, 60)  275.6 s  rss 9395 MiB
+[last] listening on 10.0.0.2:9000 (n_embd 5376, n_vocab 262144)
+[last] client connected
+[last] client disconnected

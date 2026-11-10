@@ -16,11 +16,13 @@
 | 節點 | IP | 角色 | 已知模型 | llama.cpp commit |
 | --- | --- | --- | --- | --- |
 | node1 | 192.168.137.30（`enp97s0`，100Mb/s） | Master + Stage 0 | gemma-4-31B-it-Q4_0、gemma-4-26B-A4B-it-Q4_0 | 330f0189c（已確認，2026-11-08） |
-| node2 | 192.168.137.31（`enp97s0`，100Mb/s；hostname 仍為出廠預設 `orangepi6plus`） | Stage 1 | Qwen2.5-7B-Instruct-Q4_K_M、Llama-3.3-70B-Instruct-IQ2_M（**尚無 Gemma 31B**） | 330f0189c（已確認，2026-11-10） |
+| node2 | 192.168.137.31（`enp97s0`，100Mb/s）；hostname 已改為 `node2` | Stage 1 | gemma-4-31B-it-Q4_0（2026-11-10 從 node1 複製，SHA-256 相同）、Llama-3.3-70B-Instruct-IQ2_M | 330f0189c（已確認，2026-11-10） |
 | node3 | TODO | Stage 2 | TODO | TODO |
 | node4 | TODO | Stage 3 | TODO | TODO |
 
-node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llama-3.3-70B」的那張板子。系統碟同為 USB 隨身碟（54 GB，剩 15 GB），無 swap。
+node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llama-3.3-70B」的那張板子。Qwen2.5-7B 已於 2026-11-10 經使用者同意刪除。系統碟同為 USB 隨身碟（54 GB），無 swap，時鐘無法 NTP 同步（已手動校正）。
+
+切層版本：兩張板子都有 `~/llama.cpp-pp`（git worktree，branch `pp-layer-range`，尚未 commit）與 `build-pp`（同第 4 節參數）。內含 `llama-stage-test`（同程序兩段驗證）與 `llama-pp-stage`（跨程序 / 跨板 TCP 兩段）。改動也存在本機 `results/patches/`。
 第一次連線時，請先在每張板子執行 `hostname; ip -br addr; git -C ~/llama.cpp rev-parse --short HEAD; ls -lh ~/llama.cpp/models/*.gguf | grep -v vocab; df -h /`，把上表補完並回報。
 
 ---
@@ -78,6 +80,7 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 31B KV Cache | 10 層完整注意力（第 5、11…59 層）每 token 80 KiB；50 層滑動視窗（1024）每 token 800 KiB，每人封頂約 800 MiB |
 | 31B 單板 KV 上限 | 約 6–7 GB；c=65536 成功，c=131072 記憶體不足 |
 | 31B 模型參數 | 60 層、hidden size 5376、Q4_0 約 17 GB |
+| 31B 跨板兩段（node1 0–30 層 → 5G 直連 → node2 30–60 層） | 與單板逐位元相同；每 token 前段 0.227 s + 後段 0.271 s + 網路 0.001 s = 2.00 t/s（B=1，未流水）；每板 RSS 約 9.4 GB，剩約 15 GB（`results/6.7_cross_board_pp.md`） |
 
 ---
 
