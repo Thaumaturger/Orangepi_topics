@@ -16,11 +16,11 @@
 | 節點 | IP | 角色 | 已知模型 | llama.cpp commit |
 | --- | --- | --- | --- | --- |
 | node1 | 192.168.137.30（`enp97s0`，100Mb/s） | Master + Stage 0 | gemma-4-31B-it-Q4_0、gemma-4-26B-A4B-it-Q4_0 | 330f0189c（已確認，2026-11-08） |
-| node2 | TODO | Stage 1 | TODO | TODO |
+| node2 | 192.168.137.31（`enp97s0`，100Mb/s；hostname 仍為出廠預設 `orangepi6plus`） | Stage 1 | Qwen2.5-7B-Instruct-Q4_K_M、Llama-3.3-70B-Instruct-IQ2_M（**尚無 Gemma 31B**） | 330f0189c（已確認，2026-11-10） |
 | node3 | TODO | Stage 2 | TODO | TODO |
 | node4 | TODO | Stage 3 | TODO | TODO |
 
-另有一張板子（IP 曾為 192.168.137.31）放有 Qwen2.5-7B Q4_K_M 與 Llama-3.3-70B IQ2_M，commit 為 330f0189c，對應哪個 node 待確認。
+node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llama-3.3-70B」的那張板子。系統碟同為 USB 隨身碟（54 GB，剩 15 GB），無 swap。
 第一次連線時，請先在每張板子執行 `hostname; ip -br addr; git -C ~/llama.cpp rev-parse --short HEAD; ls -lh ~/llama.cpp/models/*.gguf | grep -v vocab; df -h /`，把上表補完並回報。
 
 ---
@@ -63,7 +63,7 @@ cmake --build build-cpu-opt --config Release -j 8
 grep -r "armv8.6-a" build-cpu-opt --include=flags.make | head -1   # 有輸出才算成功
 ```
 
-RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/rpc-server -H 0.0.0.0 -p 50052 -c`
+RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 0.0.0.0 -p 50052 -c`（commit 330f0189c 的執行檔名稱是 `ggml-rpc-server`，不是 `rpc-server`）
 
 ---
 

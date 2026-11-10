@@ -1,0 +1,187 @@
+# node1 -> node2 (192.168.137.31)
+# date: 2026-11-10T16:00:53+00:00
+# node1 governor: schedutil 
+netlink error: Operation not permitted
+# node1 enp97s0: 	Speed: 100Mb/s 	Duplex: Full 
+=== ping -c 50 -i 0.2 (56 B)
+PING 192.168.137.31 (192.168.137.31) 56(84) bytes of data.
+64 bytes from 192.168.137.31: icmp_seq=1 ttl=64 time=0.925 ms
+64 bytes from 192.168.137.31: icmp_seq=2 ttl=64 time=0.598 ms
+64 bytes from 192.168.137.31: icmp_seq=3 ttl=64 time=0.421 ms
+64 bytes from 192.168.137.31: icmp_seq=4 ttl=64 time=0.398 ms
+64 bytes from 192.168.137.31: icmp_seq=5 ttl=64 time=0.551 ms
+64 bytes from 192.168.137.31: icmp_seq=6 ttl=64 time=0.550 ms
+64 bytes from 192.168.137.31: icmp_seq=7 ttl=64 time=0.395 ms
+64 bytes from 192.168.137.31: icmp_seq=8 ttl=64 time=0.416 ms
+64 bytes from 192.168.137.31: icmp_seq=9 ttl=64 time=0.398 ms
+64 bytes from 192.168.137.31: icmp_seq=10 ttl=64 time=0.544 ms
+64 bytes from 192.168.137.31: icmp_seq=11 ttl=64 time=0.551 ms
+64 bytes from 192.168.137.31: icmp_seq=12 ttl=64 time=0.413 ms
+64 bytes from 192.168.137.31: icmp_seq=13 ttl=64 time=0.417 ms
+64 bytes from 192.168.137.31: icmp_seq=14 ttl=64 time=0.417 ms
+64 bytes from 192.168.137.31: icmp_seq=15 ttl=64 time=0.589 ms
+64 bytes from 192.168.137.31: icmp_seq=16 ttl=64 time=0.565 ms
+64 bytes from 192.168.137.31: icmp_seq=17 ttl=64 time=0.403 ms
+64 bytes from 192.168.137.31: icmp_seq=18 ttl=64 time=0.445 ms
+64 bytes from 192.168.137.31: icmp_seq=19 ttl=64 time=0.409 ms
+64 bytes from 192.168.137.31: icmp_seq=20 ttl=64 time=0.830 ms
+64 bytes from 192.168.137.31: icmp_seq=21 ttl=64 time=0.560 ms
+64 bytes from 192.168.137.31: icmp_seq=22 ttl=64 time=0.406 ms
+64 bytes from 192.168.137.31: icmp_seq=23 ttl=64 time=0.413 ms
+64 bytes from 192.168.137.31: icmp_seq=24 ttl=64 time=0.398 ms
+64 bytes from 192.168.137.31: icmp_seq=25 ttl=64 time=0.553 ms
+64 bytes from 192.168.137.31: icmp_seq=26 ttl=64 time=0.575 ms
+64 bytes from 192.168.137.31: icmp_seq=27 ttl=64 time=0.408 ms
+64 bytes from 192.168.137.31: icmp_seq=28 ttl=64 time=0.401 ms
+64 bytes from 192.168.137.31: icmp_seq=29 ttl=64 time=0.415 ms
+64 bytes from 192.168.137.31: icmp_seq=30 ttl=64 time=0.545 ms
+64 bytes from 192.168.137.31: icmp_seq=31 ttl=64 time=0.553 ms
+64 bytes from 192.168.137.31: icmp_seq=32 ttl=64 time=0.396 ms
+64 bytes from 192.168.137.31: icmp_seq=33 ttl=64 time=0.401 ms
+64 bytes from 192.168.137.31: icmp_seq=34 ttl=64 time=0.394 ms
+64 bytes from 192.168.137.31: icmp_seq=35 ttl=64 time=0.569 ms
+64 bytes from 192.168.137.31: icmp_seq=36 ttl=64 time=0.591 ms
+64 bytes from 192.168.137.31: icmp_seq=37 ttl=64 time=0.428 ms
+64 bytes from 192.168.137.31: icmp_seq=38 ttl=64 time=0.401 ms
+64 bytes from 192.168.137.31: icmp_seq=39 ttl=64 time=0.407 ms
+64 bytes from 192.168.137.31: icmp_seq=40 ttl=64 time=0.531 ms
+64 bytes from 192.168.137.31: icmp_seq=41 ttl=64 time=0.537 ms
+64 bytes from 192.168.137.31: icmp_seq=42 ttl=64 time=0.387 ms
+64 bytes from 192.168.137.31: icmp_seq=43 ttl=64 time=0.404 ms
+64 bytes from 192.168.137.31: icmp_seq=44 ttl=64 time=0.398 ms
+64 bytes from 192.168.137.31: icmp_seq=45 ttl=64 time=0.530 ms
+64 bytes from 192.168.137.31: icmp_seq=46 ttl=64 time=0.609 ms
+64 bytes from 192.168.137.31: icmp_seq=47 ttl=64 time=0.395 ms
+64 bytes from 192.168.137.31: icmp_seq=48 ttl=64 time=0.419 ms
+64 bytes from 192.168.137.31: icmp_seq=49 ttl=64 time=0.400 ms
+64 bytes from 192.168.137.31: icmp_seq=50 ttl=64 time=0.535 ms
+
+--- 192.168.137.31 ping statistics ---
+50 packets transmitted, 50 received, 0% packet loss, time 9992ms
+rtt min/avg/max/mdev = 0.387/0.483/0.925/0.110 ms
+rc=0
+=== ping -c 20 -i 0.2 -s 1472 (1 MTU)
+PING 192.168.137.31 (192.168.137.31) 1472(1500) bytes of data.
+1480 bytes from 192.168.137.31: icmp_seq=1 ttl=64 time=0.889 ms
+1480 bytes from 192.168.137.31: icmp_seq=2 ttl=64 time=1.09 ms
+1480 bytes from 192.168.137.31: icmp_seq=3 ttl=64 time=1.05 ms
+1480 bytes from 192.168.137.31: icmp_seq=4 ttl=64 time=1.47 ms
+1480 bytes from 192.168.137.31: icmp_seq=5 ttl=64 time=1.07 ms
+1480 bytes from 192.168.137.31: icmp_seq=6 ttl=64 time=1.07 ms
+1480 bytes from 192.168.137.31: icmp_seq=7 ttl=64 time=0.915 ms
+1480 bytes from 192.168.137.31: icmp_seq=8 ttl=64 time=0.908 ms
+1480 bytes from 192.168.137.31: icmp_seq=9 ttl=64 time=0.937 ms
+1480 bytes from 192.168.137.31: icmp_seq=10 ttl=64 time=0.911 ms
+1480 bytes from 192.168.137.31: icmp_seq=11 ttl=64 time=0.923 ms
+1480 bytes from 192.168.137.31: icmp_seq=12 ttl=64 time=0.912 ms
+1480 bytes from 192.168.137.31: icmp_seq=13 ttl=64 time=0.927 ms
+1480 bytes from 192.168.137.31: icmp_seq=14 ttl=64 time=1.05 ms
+1480 bytes from 192.168.137.31: icmp_seq=15 ttl=64 time=1.07 ms
+1480 bytes from 192.168.137.31: icmp_seq=16 ttl=64 time=1.05 ms
+1480 bytes from 192.168.137.31: icmp_seq=17 ttl=64 time=1.06 ms
+1480 bytes from 192.168.137.31: icmp_seq=18 ttl=64 time=1.04 ms
+1480 bytes from 192.168.137.31: icmp_seq=19 ttl=64 time=1.05 ms
+1480 bytes from 192.168.137.31: icmp_seq=20 ttl=64 time=0.920 ms
+
+--- 192.168.137.31 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3810ms
+rtt min/avg/max/mdev = 0.889/1.015/1.465/0.125 ms
+rc=0
+=== ping -c 20 -i 0.2 -s 10752 (fp16 hidden state of 31B, 5376 x 2 B)
+PING 192.168.137.31 (192.168.137.31) 10752(10780) bytes of data.
+10760 bytes from 192.168.137.31: icmp_seq=1 ttl=64 time=2.48 ms
+10760 bytes from 192.168.137.31: icmp_seq=2 ttl=64 time=2.38 ms
+10760 bytes from 192.168.137.31: icmp_seq=3 ttl=64 time=2.42 ms
+10760 bytes from 192.168.137.31: icmp_seq=4 ttl=64 time=2.68 ms
+10760 bytes from 192.168.137.31: icmp_seq=5 ttl=64 time=2.57 ms
+10760 bytes from 192.168.137.31: icmp_seq=6 ttl=64 time=2.52 ms
+10760 bytes from 192.168.137.31: icmp_seq=7 ttl=64 time=2.55 ms
+10760 bytes from 192.168.137.31: icmp_seq=8 ttl=64 time=2.59 ms
+10760 bytes from 192.168.137.31: icmp_seq=9 ttl=64 time=2.61 ms
+10760 bytes from 192.168.137.31: icmp_seq=10 ttl=64 time=2.58 ms
+10760 bytes from 192.168.137.31: icmp_seq=11 ttl=64 time=2.72 ms
+10760 bytes from 192.168.137.31: icmp_seq=12 ttl=64 time=2.61 ms
+10760 bytes from 192.168.137.31: icmp_seq=13 ttl=64 time=2.60 ms
+10760 bytes from 192.168.137.31: icmp_seq=14 ttl=64 time=2.61 ms
+10760 bytes from 192.168.137.31: icmp_seq=15 ttl=64 time=2.57 ms
+10760 bytes from 192.168.137.31: icmp_seq=16 ttl=64 time=2.73 ms
+10760 bytes from 192.168.137.31: icmp_seq=17 ttl=64 time=2.62 ms
+10760 bytes from 192.168.137.31: icmp_seq=18 ttl=64 time=2.59 ms
+10760 bytes from 192.168.137.31: icmp_seq=19 ttl=64 time=2.74 ms
+10760 bytes from 192.168.137.31: icmp_seq=20 ttl=64 time=2.62 ms
+
+--- 192.168.137.31 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3819ms
+rtt min/avg/max/mdev = 2.384/2.589/2.742/0.089 ms
+rc=0
+=== ping -c 20 -i 0.2 -s 21504 (fp32 hidden state of 31B, 5376 x 4 B)
+PING 192.168.137.31 (192.168.137.31) 21504(21532) bytes of data.
+21512 bytes from 192.168.137.31: icmp_seq=1 ttl=64 time=4.30 ms
+21512 bytes from 192.168.137.31: icmp_seq=2 ttl=64 time=4.30 ms
+21512 bytes from 192.168.137.31: icmp_seq=3 ttl=64 time=4.29 ms
+21512 bytes from 192.168.137.31: icmp_seq=4 ttl=64 time=4.26 ms
+21512 bytes from 192.168.137.31: icmp_seq=5 ttl=64 time=4.37 ms
+21512 bytes from 192.168.137.31: icmp_seq=6 ttl=64 time=4.32 ms
+21512 bytes from 192.168.137.31: icmp_seq=7 ttl=64 time=4.24 ms
+21512 bytes from 192.168.137.31: icmp_seq=8 ttl=64 time=4.36 ms
+21512 bytes from 192.168.137.31: icmp_seq=9 ttl=64 time=4.30 ms
+21512 bytes from 192.168.137.31: icmp_seq=10 ttl=64 time=4.38 ms
+21512 bytes from 192.168.137.31: icmp_seq=11 ttl=64 time=4.35 ms
+21512 bytes from 192.168.137.31: icmp_seq=12 ttl=64 time=4.53 ms
+21512 bytes from 192.168.137.31: icmp_seq=13 ttl=64 time=4.25 ms
+21512 bytes from 192.168.137.31: icmp_seq=14 ttl=64 time=4.36 ms
+21512 bytes from 192.168.137.31: icmp_seq=15 ttl=64 time=4.25 ms
+21512 bytes from 192.168.137.31: icmp_seq=16 ttl=64 time=4.25 ms
+21512 bytes from 192.168.137.31: icmp_seq=17 ttl=64 time=4.41 ms
+21512 bytes from 192.168.137.31: icmp_seq=18 ttl=64 time=4.23 ms
+21512 bytes from 192.168.137.31: icmp_seq=19 ttl=64 time=4.33 ms
+21512 bytes from 192.168.137.31: icmp_seq=20 ttl=64 time=4.30 ms
+
+--- 192.168.137.31 ping statistics ---
+20 packets transmitted, 20 received, 0% packet loss, time 3815ms
+rtt min/avg/max/mdev = 4.229/4.319/4.534/0.070 ms
+rc=0
+=== iperf3 -c -t 10 (node1 -> node2)
+Connecting to host 192.168.137.31, port 5201
+[  5] local 192.168.137.30 port 46444 connected to 192.168.137.31 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  13.2 MBytes   111 Mbits/sec    0    376 KBytes       
+[  5]   1.00-2.00   sec  10.9 MBytes  91.2 Mbits/sec    0    376 KBytes       
+[  5]   2.00-3.00   sec  11.5 MBytes  96.5 Mbits/sec    0    376 KBytes       
+[  5]   3.00-4.00   sec  10.9 MBytes  91.2 Mbits/sec    0    376 KBytes       
+[  5]   4.00-5.00   sec  11.6 MBytes  97.6 Mbits/sec    0    376 KBytes       
+[  5]   5.00-6.00   sec  10.8 MBytes  90.2 Mbits/sec    0    376 KBytes       
+[  5]   6.00-7.00   sec  11.6 MBytes  97.5 Mbits/sec    0    376 KBytes       
+[  5]   7.00-8.00   sec  10.8 MBytes  90.2 Mbits/sec    0    376 KBytes       
+[  5]   8.00-9.00   sec  11.6 MBytes  97.5 Mbits/sec    0    376 KBytes       
+[  5]   9.00-10.01  sec  10.8 MBytes  89.7 Mbits/sec    0    376 KBytes       
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.01  sec   114 MBytes  95.3 Mbits/sec    0             sender
+[  5]   0.00-10.03  sec   112 MBytes  94.1 Mbits/sec                  receiver
+
+iperf Done.
+rc=0
+=== iperf3 -c -t 10 -R (node2 -> node1)
+Connecting to host 192.168.137.31, port 5201
+Reverse mode, remote host 192.168.137.31 is sending
+[  5] local 192.168.137.30 port 38974 connected to 192.168.137.31 port 5201
+[ ID] Interval           Transfer     Bitrate
+[  5]   0.00-1.00   sec  11.1 MBytes  93.3 Mbits/sec                  
+[  5]   1.00-2.00   sec  11.2 MBytes  94.4 Mbits/sec                  
+[  5]   2.00-3.00   sec  11.2 MBytes  94.3 Mbits/sec                  
+[  5]   3.00-4.00   sec  11.2 MBytes  94.4 Mbits/sec                  
+[  5]   4.00-5.00   sec  11.1 MBytes  93.3 Mbits/sec                  
+[  5]   5.00-6.00   sec  11.2 MBytes  94.4 Mbits/sec                  
+[  5]   6.00-7.00   sec  11.2 MBytes  94.4 Mbits/sec                  
+[  5]   7.00-8.00   sec  11.2 MBytes  94.3 Mbits/sec                  
+[  5]   8.00-9.00   sec  11.1 MBytes  93.3 Mbits/sec                  
+[  5]   9.00-10.00  sec  11.2 MBytes  94.4 Mbits/sec                  
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec   114 MBytes  95.8 Mbits/sec    0             sender
+[  5]   0.00-10.00  sec   112 MBytes  94.1 Mbits/sec                  receiver
+
+iperf Done.
+rc=0
+# end: 2026-11-10T16:01:35+00:00

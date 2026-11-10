@@ -1,0 +1,19 @@
+[load] full     layers [0, 60)  552.2 s  rss 18680 MiB
+[full] prompt 29 tok, prefill 2.74 s (10.60 t/s), gen 32 tok 15.11 s (2.12 t/s)
+[full] generated: Pipeline parallelism splits a large model into smaller segments, allowing each segment to be loaded onto a separate device's memory. This prevents any single board from needing to
+[ref] saved /tmp/stage_ref_31b.bin
+[split] n_layer 60, n_embd 5376, stage A = [0, 30), stage B = [30, 60)
+[load] stage A  layers [0, 30)  281.1 s  rss 9587 MiB
+[load] stage B  layers [30, 60)  276.3 s  rss 18963 MiB
+[mem] stage A ~9587 MiB, stage B ~9376 MiB (process RSS deltas)
+[split] prefill 29 tok: stage A 1.20 s, stage B 1.51 s
+  prompt   0  max_abs 0.000e+00  rms 0.000e+00  top1 ref    100 new    100 
+  prompt   1  max_abs 0.000e+00  rms 0.000e+00  top1 ref    100 new    100 
+  prompt  28  max_abs 0.000e+00  rms 0.000e+00  top1 ref  55407 new  55407 
+  gen      0  max_abs 0.000e+00  rms 0.000e+00  top1 ref 145435 new 145435 
+  gen      1  max_abs 0.000e+00  rms 0.000e+00  top1 ref  52204 new  52204 
+  gen     28  max_abs 0.000e+00  rms 0.000e+00  top1 ref    699 new    699 
+[split] gen 32 tok: stage A 0.215 s/tok, stage B 0.257 s/tok (sum 2.12 t/s)
+[split] own greedy continuation:  parallelism splits a large model into smaller segments, allowing each segment to be loaded onto a separate device's memory. This prevents any single board from needing to hold
+[result] rows 61  top1 agree 61/61  next-token agree 31/31  worst max_abs 0.000e+00  worst rel 0.000e+00  rms 0.000e+00
+[result] PASS (criteria: all top1 agree and worst max_abs < 1e-3)
