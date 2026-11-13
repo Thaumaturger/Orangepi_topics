@@ -33,7 +33,9 @@ node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llam
 - 記憶體：系統可見 30 GiB，開機後可用約 24 GiB。
 - GPU：Mali-G720，Vulkan 驅動不支援整數點積，**比 CPU 慢，不使用**。
 - 網路：雙 5GbE（`enp49s0`、`enp97s0`，Realtek RTL8126，驅動 `r8126`）。`enp97s0` 接交換器（只支援 100Mb/s，待換），用於管理與上網。
-- node1 ↔ node2 以 `enp49s0` 直連：node1 `10.0.0.1`、node2 `10.0.0.2`（NetworkManager「Wired connection 1」，無閘道）。換新線後協商到 **5000Mb/s**，iperf3 單一串流 4.71 Gbit/s、0% 遺失（舊線在 2.5G 以上會大量掉封包）。EEE 維持預設開啟也穩定，全部是預設或永久設定，重開機後自動恢復。板子之間的資料傳輸請走 10.0.0.x。
+- **2026-11-13 起改用 2.5GbE 交換器**：兩板 `enp97s0` 協商到 2500Mb/s，iperf3 雙向 2.35 Gbit/s、0 重傳，小封包 RTT 0.51 ms。**板子之間的資料傳輸走交換器的 192.168.137.x**。剛開機的前 1–2 分鐘頻寬不穩，量測前先等開機完成。
+- 直連線（`enp49s0`）目前已拔除。設定仍保留在 NetworkManager「Wired connection 1」（node1 `10.0.0.1`、node2 `10.0.0.2`），插回就能用。曾測到 5000Mb/s、4.71 Gbit/s。
+- 板子沒有 RTC 電池且無法 NTP，**每次開機時鐘都會停在上次關機的時間**，log 的時間戳記會錯，需要手動對時。
 - 系統：Ubuntu 24.04、GCC 13.3。
 
 ---
@@ -81,7 +83,13 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 31B 單板 KV 上限 | 約 6–7 GB；c=65536 成功，c=131072 記憶體不足 |
 | 31B 模型參數 | 60 層、hidden size 5376、Q4_0 約 17 GB |
 | 31B 跨板兩段（node1 0–30 層 → 5G 直連 → node2 30–60 層） | 與單板逐位元相同；每 token 前段 0.227 s + 後段 0.271 s + 網路 0.001 s = 2.00 t/s（B=1，未流水）；每板 RSS 約 9.4 GB，剩約 15 GB（`results/6.7_cross_board_pp.md`） |
-| 31B 跨板流水（`performance`） | 1x1 2.10 t/s → 2 個請求流水 2x2 **3.83 t/s**（1.82 倍）。batch > 1 的組態無效：前段 `embeddings=true` 讓 llama.cpp 逐序列拆 ubatch，下次前段要設 `kv_unified=true` 重測（`results/6.8_pipeline_sweep.md`） |
+| 31B 跨板流水（`performance`） | 1x1 2.10 t/s → 2 個請求流水 2x2 **3.83 t/s**（1.82 倍）。batch > 1 的組態無效：前段 `embeddings=true` 讓 llama.cpp 逐序列拆 ubatch；`kv_unified=true` 的修正已編進兩板的 `llama-pp-stage`（`results/6.8_pipeline_sweep.md`） |
+
+**進度總報告**：`results/REPORT_2026-11-13.md`。
+
+**下次接回板子網路後，先做這兩件事：**
+1. **取回 pp4**：修正後的流水掃描（切在第 30 層，`1x1,2x2,4x1,4x2,8x2,16x1,16x2,32x2`），2026-11-13 05:34 UTC 在板子上啟動，中途電腦離開了板子的網路。結果應在 node1 `~/llama.cpp/results/pp4_first_*.{out,log,mem}`，node2 的是 `pp4_last_*`。先確認 `.log` 最後有 `# exit=0`；若沒有跑完或被中斷，就重跑。node2 的 `llama-pp-stage` 伺服器可能還在執行，要用 `pgrep -x llama-pp-stage` 找到 PID 再停掉。
+2. **跑 pp5（非對稱切層）**：`-s 33`，`--configs 1x1,2x2,16x2,32x2`，其他參數同 pp4。後段走 `192.168.137.31:9000`。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生。
 
 ---
 

@@ -143,9 +143,13 @@ static llama_context * make_ctx(const opts_t & o, llama_model * m, bool embeddin
     cp.n_threads_batch = o.n_threads;
     cp.embeddings      = embeddings;
     cp.pooling_type    = LLAMA_POOLING_TYPE_NONE;
+    // unified KV: lets llama.cpp put all sequences of a micro-batch in one ubatch (split_simple).
+    // without it, embeddings=true (first stage) makes the KV cache split the batch one sequence per
+    // ubatch (split_seq), so a batch of K sequences costs K single-token passes (see 6.8_pipeline_sweep.md)
+    cp.kv_unified      = true;
     llama_context * c = llama_init_from_model(m, cp);
     if (!c) die("failed to create context");
-    printf("[ctx] n_ctx %u, n_seq_max %u, rss %ld MiB\n", cp.n_ctx, cp.n_seq_max, rss_mib());
+    printf("[ctx] n_ctx %u, n_seq_max %u, kv_unified %d, rss %ld MiB\n", cp.n_ctx, cp.n_seq_max, (int) cp.kv_unified, rss_mib());
     fflush(stdout);
     return c;
 }
