@@ -1,0 +1,4 @@
+[load] last layers [30, 60)  274.8 s  rss 9394 MiB
+[ctx] n_ctx 8192, n_seq_max 32, kv_unified 1, rss 12947 MiB
+[last] listening on 192.168.137.31:9000 (n_embd 5376, n_vocab 262144)
+[last] client connected

@@ -1,0 +1,3 @@
+[load] first layers [0, 33)  289.6 s  rss 10226 MiB
+[ctx] n_ctx 8192, n_seq_max 32, kv_unified 1, rss 14163 MiB
+[first] connecting to 192.168.137.31:9000 ...

@@ -83,13 +83,18 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 31B 單板 KV 上限 | 約 6–7 GB；c=65536 成功，c=131072 記憶體不足 |
 | 31B 模型參數 | 60 層、hidden size 5376、Q4_0 約 17 GB |
 | 31B 跨板兩段（node1 0–30 層 → 5G 直連 → node2 30–60 層） | 與單板逐位元相同；每 token 前段 0.227 s + 後段 0.271 s + 網路 0.001 s = 2.00 t/s（B=1，未流水）；每板 RSS 約 9.4 GB，剩約 15 GB（`results/6.7_cross_board_pp.md`） |
-| 31B 跨板流水（`performance`） | 1x1 2.10 t/s → 2 個請求流水 2x2 **3.83 t/s**（1.82 倍）。batch > 1 的組態無效：前段 `embeddings=true` 讓 llama.cpp 逐序列拆 ubatch；`kv_unified=true` 的修正已編進兩板的 `llama-pp-stage`（`results/6.8_pipeline_sweep.md`） |
+| 31B 跨板流水（`performance`） | 1x1 2.10 t/s → 2 個請求流水 2x2 **3.83 t/s**（1.82 倍）（`results/6.8_pipeline_sweep.md`） |
+| 31B 跨板批次 + 流水（`kv_unified` 修正後，切在第 30 層） | 4x1 8.08、8x2 14.79、16x1 13.08、**16x2 17.08 t/s**（單板 B=16 的 1.38 倍）；後段 99% 忙碌是瓶頸。32x2 因 node2 當機未完成（`results/6.9_pipeline_sweep_fixed.md`） |
 
 **進度總報告**：`results/REPORT_2026-11-13.md`。
 
-**下次接回板子網路後，先做這兩件事：**
-1. **取回 pp4**：修正後的流水掃描（切在第 30 層，`1x1,2x2,4x1,4x2,8x2,16x1,16x2,32x2`），2026-11-13 05:34 UTC 在板子上啟動，中途電腦離開了板子的網路。結果應在 node1 `~/llama.cpp/results/pp4_first_*.{out,log,mem}`，node2 的是 `pp4_last_*`。先確認 `.log` 最後有 `# exit=0`；若沒有跑完或被中斷，就重跑。node2 的 `llama-pp-stage` 伺服器可能還在執行，要用 `pgrep -x llama-pp-stage` 找到 PID 再停掉。
-2. **跑 pp5（非對稱切層）**：`-s 33`，`--configs 1x1,2x2,16x2,32x2`，其他參數同 pp4。後段走 `192.168.137.31:9000`。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生。
+**node2 供電不足（2026-11-13 確認）**：node2 的電源線只有 60 W，長時間 8 核滿載（流水的後段 99% 忙碌）時會整台當機，兩次都發生在大批次組態（當機前溫度最高 74°C、記憶體充足）。**換成足夠的電源（例如 100 W）之前，不要在 node2 跑長時間滿載的實驗**；當機後 node1 的前段會一直等待，要用 `pgrep -x llama-pp-stage` 找到 PID 停掉。
+
+**換好電源後，先做這兩件事：**
+1. **補跑 32x2**：切在第 30 層，`--configs 32x2`，其他參數同 `results/6.9_pipeline_sweep_fixed.md`。
+2. **跑 pp5（非對稱切層）**：`-s 33`，`--configs 1x1,2x2,16x2,32x2`。後段走 `192.168.137.31:9000`。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生。
+
+兩張板子開機後都要執行 `~/set_perf.sh`（需要 sudo），調頻才會是 `performance`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
 
 ---
 

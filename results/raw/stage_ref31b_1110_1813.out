@@ -1,0 +1,4 @@
+[load] full     layers [0, 60)  533.7 s  rss 18680 MiB
+[full] prompt 29 tok, prefill 2.54 s (11.40 t/s), gen 32 tok 15.08 s (2.12 t/s)
+[full] generated: Pipeline parallelism splits a large model into smaller segments, allowing each segment to be loaded onto a separate device's memory. This prevents any single board from needing to
+[ref] saved /tmp/stage_ref_31b.bin
