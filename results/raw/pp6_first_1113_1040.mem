@@ -1,0 +1,27 @@
+10:40:13 swap_kb=0 avail_kb=25183288 psi_full10=0.00 cpu=00:00:00 hi=0 tmax=42000
+10:40:30 swap_kb=0 avail_kb=24604776 psi_full10=0.00 cpu=00:00:00 hi=0 tmax=42000
+10:40:45 swap_kb=0 avail_kb=24087184 psi_full10=0.00 cpu=00:00:01 hi=0 tmax=42000
+10:41:00 swap_kb=0 avail_kb=23507164 psi_full10=0.00 cpu=00:00:01 hi=0 tmax=42000
+10:41:16 swap_kb=0 avail_kb=22993936 psi_full10=0.00 cpu=00:00:01 hi=0 tmax=42000
+10:41:31 swap_kb=0 avail_kb=22408760 psi_full10=0.00 cpu=00:00:01 hi=0 tmax=42000
+10:41:46 swap_kb=0 avail_kb=21893452 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+10:42:01 swap_kb=0 avail_kb=21378968 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+10:42:17 swap_kb=0 avail_kb=20796872 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+10:42:32 swap_kb=0 avail_kb=20282900 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=43000
+10:42:47 swap_kb=0 avail_kb=19762812 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=43000
+10:43:02 swap_kb=0 avail_kb=19186084 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=43000
+10:43:18 swap_kb=0 avail_kb=18689176 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=43000
+10:43:33 swap_kb=0 avail_kb=18180044 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=43000
+10:43:48 swap_kb=0 avail_kb=17641972 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=43000
+10:44:04 swap_kb=0 avail_kb=17174016 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=43000
+10:44:19 swap_kb=0 avail_kb=16633184 psi_full10=0.00 cpu=00:00:05 hi=0 tmax=43000
+10:44:34 swap_kb=0 avail_kb=16113296 psi_full10=0.00 cpu=00:00:05 hi=0 tmax=43000
+10:44:50 swap_kb=0 avail_kb=12041132 psi_full10=0.00 cpu=00:00:13 hi=0 tmax=43000
+10:45:05 swap_kb=0 avail_kb=12011424 psi_full10=0.00 cpu=00:01:06 hi=0 tmax=50000
+10:45:20 swap_kb=0 avail_kb=11855888 psi_full10=0.00 cpu=00:02:54 hi=0 tmax=52000
+10:45:36 swap_kb=0 avail_kb=11852112 psi_full10=0.00 cpu=00:03:03 hi=0 tmax=66000
+10:45:51 swap_kb=0 avail_kb=11854300 psi_full10=0.00 cpu=00:04:41 hi=0 tmax=46000
+10:46:06 swap_kb=0 avail_kb=11851928 psi_full10=0.00 cpu=00:05:00 hi=0 tmax=57000
+10:46:21 swap_kb=0 avail_kb=11849728 psi_full10=0.00 cpu=00:06:28 hi=0 tmax=63000
+10:46:37 swap_kb=0 avail_kb=11852968 psi_full10=0.00 cpu=00:07:57 hi=0 tmax=67000
+10:46:52 target exited

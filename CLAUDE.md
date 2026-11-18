@@ -84,15 +84,16 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 31B 模型參數 | 60 層、hidden size 5376、Q4_0 約 17 GB |
 | 31B 跨板兩段（node1 0–30 層 → 5G 直連 → node2 30–60 層） | 與單板逐位元相同；每 token 前段 0.227 s + 後段 0.271 s + 網路 0.001 s = 2.00 t/s（B=1，未流水）；每板 RSS 約 9.4 GB，剩約 15 GB（`results/6.7_cross_board_pp.md`） |
 | 31B 跨板流水（`performance`） | 1x1 2.10 t/s → 2 個請求流水 2x2 **3.83 t/s**（1.82 倍）（`results/6.8_pipeline_sweep.md`） |
-| 31B 跨板批次 + 流水（`kv_unified` 修正後，切在第 30 層） | 4x1 8.08、8x2 14.79、16x1 13.08、**16x2 17.08 t/s**（單板 B=16 的 1.38 倍）；後段 99% 忙碌是瓶頸。32x2 因 node2 當機未完成（`results/6.9_pipeline_sweep_fixed.md`） |
+| 31B 跨板批次 + 流水（`kv_unified` 修正後，切在第 30 層） | 4x1 8.08、8x2 14.79、16x1 13.08、16x2 17.08、32x2 22.99 t/s；後段 99% 忙碌是瓶頸（`results/6.9_pipeline_sweep_fixed.md`、`results/6.10_power_fix_and_asym_split.md`） |
+| 31B 非對稱切層（切在第 33 層） | 兩段忙碌 98% / 98%；2x2 4.16、16x2 18.48、**32x2 24.88 t/s（單板最佳值的 2.02 倍）**，比切在第 30 層快約 8%（`results/6.10_power_fix_and_asym_split.md`） |
 
 **進度總報告**：`results/REPORT_2026-11-13.md`。
 
-**node2 供電不足（2026-11-13 確認）**：node2 的電源線只有 60 W，長時間 8 核滿載（流水的後段 99% 忙碌）時會整台當機，兩次都發生在大批次組態（當機前溫度最高 74°C、記憶體充足）。**換成足夠的電源（例如 100 W）之前，不要在 node2 跑長時間滿載的實驗**；當機後 node1 的前段會一直等待，要用 `pgrep -x llama-pp-stage` 找到 PID 停掉。
+**供電**：node2 原本的 60 W 電源線在長時間 8 核滿載時會讓整台當機；2026-11-18 換上新線後，32x2 與 pp5 都完整跑完（最高 73°C）。長時間（30 分鐘以上）滿載尚未測試。每張板子都要用 PD 20V⎓5A（100 W）的電源。前段程序要加 `timeout`，後段當機時才不會無限等待。
 
-**換好電源後，先做這兩件事：**
-1. **補跑 32x2**：切在第 30 層，`--configs 32x2`，其他參數同 `results/6.9_pipeline_sweep_fixed.md`。
-2. **跑 pp5（非對稱切層）**：`-s 33`，`--configs 1x1,2x2,16x2,32x2`。後段走 `192.168.137.31:9000`。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生。
+**網路共用**：電腦用 Wi-Fi 上網，共用設定為「Wi-Fi → 乙太網路」，乙太網路為 192.168.137.1。**交換器不可接到學校網路**（ICS 會在學校網路上發 DHCP，導致電腦斷網）。板子因此能上網，node1 已自動 NTP 對時；node2 的 NTP 先前被關閉，時鐘仍不準。
+
+**下一步**：資料平行對照組實測（兩板同時各跑 `llama-batched-bench`）；`-s 34` 測 32x2；重複量測取標準差。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
 
 兩張板子開機後都要執行 `~/set_perf.sh`（需要 sudo），調頻才會是 `performance`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
 

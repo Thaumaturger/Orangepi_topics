@@ -1,0 +1,9 @@
+[load] first layers [0, 33)  297.4 s  rss 10226 MiB
+[ctx] n_ctx 8192, n_seq_max 32, kv_unified 1, rss 14163 MiB
+[first] connecting to 192.168.137.31:9000 ...
+[first] connected
+[verify] rows 61  top1 agree 61/61  worst max_abs 0.000e+00  -> PASS
+[config  1x1] R  1  M 1  per-mb  1  gen 32 tok/seq  time 15.20 s  -> 2.10 t/s total, 2.105 t/s per seq  | busy A 50%  B 50%  | prefill 2.2 s | seq0 vs ref 32/32
+[config  2x2] R  2  M 2  per-mb  1  gen 32 tok/seq  time 15.40 s  -> 4.16 t/s total, 2.078 t/s per seq  | busy A 98%  B 98%  | prefill 4.4 s | seq0 vs ref 32/32
+[config 16x2] R 16  M 2  per-mb  8  gen 32 tok/seq  time 27.70 s  -> 18.48 t/s total, 1.155 t/s per seq  | busy A 98%  B 98%  | prefill 29.1 s | seq0 vs ref 32/32
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 41.16 s  -> 24.88 t/s total, 0.778 t/s per seq  | busy A 91%  B 99%  | prefill 57.2 s | seq0 vs ref 32/32
