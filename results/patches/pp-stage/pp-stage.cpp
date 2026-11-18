@@ -3,6 +3,9 @@
 //   last stage (e.g. node2):  llama-pp-stage --role last  -m model.gguf -s S -N n_layer --listen 0.0.0.0:9000 [--n-seq 32] [-t 8]
 //   first stage (e.g. node1): llama-pp-stage --role first -m model.gguf -s S --next 10.0.0.2:9000 --ref ref.bin
 //                                            [--configs 1x1,2x2,8x2] [-n 32] [--n-seq 32] [-t 8] [--no-verify]
+//                                            [--ctx-seq 256] [--prefix N]
+// --prefix N: every sequence starts with the same N-token prefix (filled once on sequence 0, then copied with
+//             llama_memory_seq_cp on both stages), so generation runs with an N-token context per sequence
 //
 // The first stage runs layers [0, S) and sends the hidden state (fp32, n_tokens x n_embd) plus per-row
 // (pos, seq_id, output) to the last stage, which runs layers [S, N) + lm head and returns either logits rows
@@ -40,6 +43,7 @@ enum pp_msg_type : uint32_t {
     PP_RESET    = 2, // clear the KV cache (all sequences)
     PP_QUIT     = 3, // close this connection
     PP_SHUTDOWN = 4, // close and exit the server
+    PP_SEQCP    = 5, // copy sequence 0 to sequences 1..n_tokens-1 (shared prefix), no payload
 };
 
 #pragma pack(push, 1)
@@ -117,6 +121,7 @@ static void split_hostport(const std::string & s, std::string & host, std::strin
 struct opts_t {
     std::string role, model, listen = "0.0.0.0:9000", next, ref, configs = "1x1";
     int split = -1, n_layer = -1, n_gen = 32, n_threads = 8, n_seq = 32, n_ctx_seq = 256;
+    int prefix = 0; // > 0: every sequence starts with the same prefix of this many tokens (filled once, then copied)
     bool verify = true;
 };
 
@@ -136,7 +141,7 @@ static llama_model * load_stage(const opts_t & o, int a, int b, const char * nam
 static llama_context * make_ctx(const opts_t & o, llama_model * m, bool embeddings) {
     llama_context_params cp = llama_context_default_params();
     cp.n_ctx           = (uint32_t) (o.n_seq * o.n_ctx_seq);
-    cp.n_batch         = cp.n_ctx;
+    cp.n_batch         = std::min<uint32_t>(cp.n_ctx, 8192);
     cp.n_ubatch        = 512;
     cp.n_seq_max       = (uint32_t) o.n_seq;
     cp.n_threads       = o.n_threads;
@@ -147,9 +152,12 @@ static llama_context * make_ctx(const opts_t & o, llama_model * m, bool embeddin
     // without it, embeddings=true (first stage) makes the KV cache split the batch one sequence per
     // ubatch (split_seq), so a batch of K sequences costs K single-token passes (see 6.8_pipeline_sweep.md)
     cp.kv_unified      = true;
+    // sliding-window layers keep n_swa cells per sequence, as llama-server does (the library default is full size)
+    cp.swa_full        = false;
     llama_context * c = llama_init_from_model(m, cp);
     if (!c) die("failed to create context");
-    printf("[ctx] n_ctx %u, n_seq_max %u, kv_unified %d, rss %ld MiB\n", cp.n_ctx, cp.n_seq_max, (int) cp.kv_unified, rss_mib());
+    printf("[ctx] n_ctx %u, n_batch %u, n_seq_max %u, kv_unified %d, swa_full %d, rss %ld MiB\n",
+           cp.n_ctx, cp.n_batch, cp.n_seq_max, (int) cp.kv_unified, (int) cp.swa_full, rss_mib());
     fflush(stdout);
     return c;
 }
@@ -166,7 +174,7 @@ static int run_last(const opts_t & o) {
     llama_context * c = make_ctx(o, m, false);
     const int n_embd  = llama_model_n_embd(m);
     const int n_vocab = llama_vocab_n_tokens(llama_model_get_vocab(m));
-    const int n_max   = o.n_seq * o.n_ctx_seq;
+    const int n_max   = std::min(o.n_seq * o.n_ctx_seq, 8192); // largest batch accepted (= n_batch)
 
     std::string host, port;
     split_hostport(o.listen, host, port);
@@ -200,6 +208,12 @@ static int run_last(const opts_t & o) {
             if (rq.magic != PP_MAGIC) { fprintf(stderr, "bad magic\n"); break; }
             if (rq.type == PP_RESET) {
                 llama_memory_clear(llama_get_memory(c), true);
+                pp_rsp rs = { PP_MAGIC, 0, 0, 0.0f };
+                send_all(fd, &rs, sizeof(rs));
+                continue;
+            }
+            if (rq.type == PP_SEQCP) {
+                for (int s = 1; s < rq.n_tokens; ++s) llama_memory_seq_cp(llama_get_memory(c), 0, s, -1, -1);
                 pp_rsp rs = { PP_MAGIC, 0, 0, 0.0f };
                 send_all(fd, &rs, sizeof(rs));
                 continue;
@@ -347,6 +361,14 @@ struct first_t {
         if (!send_all(fd, &rq, sizeof(rq)) || !recv_all(fd, &rs, sizeof(rs))) die("reset failed");
         busy_a = busy_b = 0.0;
     }
+
+    // both stages: copy sequence 0 to sequences 1..R-1
+    void seq_cp(int R) {
+        for (int s = 1; s < R; ++s) llama_memory_seq_cp(llama_get_memory(c), 0, s, -1, -1);
+        pp_req rq = { PP_MAGIC, PP_SEQCP, R, n_embd, 0 };
+        pp_rsp rs;
+        if (!send_all(fd, &rq, sizeof(rq)) || !recv_all(fd, &rs, sizeof(rs))) die("seq_cp failed");
+    }
 };
 
 static void verify_pass(first_t & F, const ref_t & r) {
@@ -383,7 +405,25 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
     const int K = R / M; // sequences per micro-batch
     const int n = (int) r.prompt.size();
     const int G = F.o.n_gen;
+    const int P = F.o.prefix; // shared prefix length; the prompt and generation follow it
+    if (P + n + G > F.o.n_ctx_seq) { printf("[config %dx%d] skipped (prefix + prompt + gen > ctx-seq)\n", R, M); return; }
     F.reset();
+
+    // shared prefix: fill sequence 0 in chunks of 512 through both stages, then copy it to every sequence
+    double t_prefix = 0.0;
+    if (P > 0) {
+        const double tq0 = now_s();
+        for (int p0 = 0; p0 < P; p0 += 512) {
+            const int len = std::min(512, P - p0);
+            std::vector<llama_token> tk(len);
+            std::vector<pp_row> meta(len);
+            for (int i = 0; i < len; ++i) { tk[i] = r.prompt[(p0 + i) % n]; meta[i] = { p0 + i, 0, 0 }; }
+            F.send_batch(tk, meta, false);
+            F.recv_reply(false);
+        }
+        F.seq_cp(R);
+        t_prefix = now_s() - tq0;
+    }
 
     // prefill, one micro-batch at a time (not timed as generation); only the last prompt row of each sequence is output
     std::vector<std::vector<llama_token>> next(M, std::vector<llama_token>(K));
@@ -393,7 +433,7 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
         std::vector<pp_row> meta;
         for (int k = 0; k < K; ++k) {
             const int seq = mb * K + k;
-            for (int i = 0; i < n; ++i) { tk.push_back(r.prompt[i]); meta.push_back({ i, seq, i == n - 1 ? 1 : 0 }); }
+            for (int i = 0; i < n; ++i) { tk.push_back(r.prompt[i]); meta.push_back({ P + i, seq, i == n - 1 ? 1 : 0 }); }
         }
         F.send_batch(tk, meta, false);
         F.recv_reply(false);
@@ -415,7 +455,7 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
             }
             if (mb == 0) seq0.push_back(next[0][0]);
             std::vector<pp_row> meta(K);
-            for (int k = 0; k < K; ++k) meta[k] = { n + t, mb * K + k, 1 };
+            for (int k = 0; k < K; ++k) meta[k] = { P + n + t, mb * K + k, 1 };
             F.send_batch(next[mb], meta, false);
         }
     }
@@ -423,12 +463,13 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
     const double t_gen = now_s() - t0;
 
     int agree = 0;
-    const int n_cmp = std::min<int>((int) seq0.size(), (int) r.gen.size());
+    // with a prefix the context differs from the reference, so the comparison does not apply
+    const int n_cmp = P > 0 ? 0 : std::min<int>((int) seq0.size(), (int) r.gen.size());
     for (int i = 0; i < n_cmp; ++i) agree += seq0[i] == r.gen[i];
     const double tps = (double) R * G / t_gen;
     printf("[config %2dx%d] R %2d  M %d  per-mb %2d  gen %d tok/seq  time %.2f s  -> %.2f t/s total, %.3f t/s per seq  "
-           "| busy A %.0f%%  B %.0f%%  | prefill %.1f s | seq0 vs ref %d/%d\n",
-            R, M, R, M, K, G, t_gen, tps, tps / R, 100.0 * F.busy_a / t_gen, 100.0 * F.busy_b / t_gen, t_prefill, agree, n_cmp);
+           "| busy A %.0f%%  B %.0f%%  | prefix %d tok %.1f s | prefill %.1f s | seq0 vs ref %d/%d\n",
+            R, M, R, M, K, G, t_gen, tps, tps / R, 100.0 * F.busy_a / t_gen, 100.0 * F.busy_b / t_gen, P, t_prefix, t_prefill, agree, n_cmp);
     fflush(stdout);
 }
 
@@ -441,7 +482,7 @@ static int run_first(const opts_t & o) {
     F.n_embd = llama_model_n_embd(m);
     F.nv     = r.n_vocab;
     if (F.n_embd != r.n_embd) die("n_embd mismatch with ref");
-    F.b = llama_batch_init(o.n_seq * o.n_ctx_seq, 0, 1);
+    F.b = llama_batch_init(std::min(o.n_seq * o.n_ctx_seq, 8192), 0, 1);
 
     printf("[first] connecting to %s ...\n", o.next.c_str());
     fflush(stdout);
@@ -486,6 +527,7 @@ int main(int argc, char ** argv) {
         else if (a == "--ref")       o.ref       = next();
         else if (a == "--configs")   o.configs   = next();
         else if (a == "--no-verify") o.verify    = false;
+        else if (a == "--prefix")    o.prefix    = std::atoi(next().c_str());
         else { fprintf(stderr, "unknown argument: %s\n", a.c_str()); return 1; }
     }
     if (o.model.empty()) die("-m model.gguf is required");

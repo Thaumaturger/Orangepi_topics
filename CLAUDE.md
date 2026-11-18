@@ -88,6 +88,7 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 31B 非對稱切層（切在第 33 層） | 兩段忙碌 98% / 98%；2x2 4.16、16x2 18.48、**32x2 24.88 t/s（單板最佳值的 2.02 倍）**，比切在第 30 層快約 8%（`results/6.10_power_fix_and_asym_split.md`） |
 | 資料平行對照組（兩板同時各跑完整 31B） | 2/4/8/16/32 人合計 4.21 / 5.22 / 15.78 / 18.13 / 24.66 t/s，與管線相差 ±6% 內，僅 4 人時管線快 55%（`results/6.11_data_parallel_and_capacity.md`） |
 | 容量（保留 1 GB，`swa_full=false`） | 每人 1K / 4K / 8K / 32K token：資料平行 10 / 8 / 6 / 2 人，兩板管線 27 / 21 / 17 / 7 人（**2.6–3.5 倍**）；管線容量受前段限制（`llama-cap-test`，`results/6.11_data_parallel_and_capacity.md`） |
+| 長對話（每人 4K）吞吐 | 共用 KV 時 8 人：資料平行 10.40、管線 9.84 t/s（持平）；管線 16 人 11.33 t/s。資料平行各自 KV 每板 4 人只有 3.34 t/s 且記憶體到極限；管線各自 KV 尚未實測（`results/6.12_long_context_throughput.md`） |
 
 **進度總報告**：`results/REPORT_2026-11-13.md`。
 
@@ -97,7 +98,7 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 
 **注意**：`llama_context_default_params()` 的 `swa_full` 預設為 `true`（滑動視窗層的 KV 開到整個上下文），llama-server 等工具預設為 `false`。自寫工具量容量時要設 `swa_full = false`。
 
-**下一步**：長對話下的吞吐實測；切點對容量與吞吐的取捨（第 30 vs 33 層）；`-s 34` 測 32x2；重複量測取標準差。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
+**下一步**：管線在各自 KV（每人不同 4K 對話）下的吞吐；前段改用非 unified KV 又不被逐序列拆批次的方法；切點對容量與吞吐的取捨（第 30 vs 33 層）；重複量測取標準差。`llama-pp-stage` 已有 `--prefix N`（共用開頭）與 `--ctx-seq`，並改為 `swa_full = false`。node1 有 swap（swappiness 100），記憶體接近極限的實驗容易被監控程式停止。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
 
 兩張板子開機後都要執行 `~/set_perf.sh`（需要 sudo），調頻才會是 `performance`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
 
