@@ -1,0 +1,10 @@
+[load] layers [0, 60) of 60  551.9 s  rss 18669 MiB  avail before 24825 / after 6124 MiB  reserve 1024 MiB
+[cap] L   1024  users   1  n_ctx     1024  rss  19583 MiB  avail   5202 MiB  ok  (0.6 s)
+[cap] L   1024  users   2  n_ctx     2048  rss  20470 MiB  avail   4315 MiB  ok  (0.9 s)
+[cap] L   1024  users   3  n_ctx     3072  rss  21353 MiB  avail   3423 MiB  ok  (1.2 s)
+[cap] L   1024  users   4  n_ctx     4096  rss  22238 MiB  avail   2539 MiB  ok  (0.8 s)
+[cap] L   1024  users   5  n_ctx     5120  rss  23117 MiB  avail   1654 MiB  ok  (1.2 s)
+[cap] L   1024  users   6  skipped: predicted avail 769 MiB < reserve
+[cap] L   1024  per user 885 MiB
+[result] L   1024  max users   5
+[cap] L   4096  users   1  n_ctx     4096  rss  22228 MiB  avail   2549 MiB  ok  (0.8 s)
