@@ -4,7 +4,7 @@
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30"
 MODEL=models/gemma-4-31B-it-Q4_0.gguf
 BIN=/home/orangepi/llama.cpp-pp/build-pp/bin/llama-pp-stage
-REF=/tmp/stage_ref_31b.bin
+REF=/home/orangepi/stage_ref_31b.bin
 busy() { $SSH $1 "pgrep -f '^bash /home/orangepi/run_bench.sh $2' >/dev/null"; local rc=$?; [ $rc -eq 0 ] || [ $rc -eq 255 ]; }
 for n in node1 node2; do
     $SSH $n 'pgrep -x llama-batched-b >/dev/null || pgrep -x llama-pp-stage >/dev/null || pgrep -x llama-cap-test >/dev/null' && { echo "[lcd] $n busy, abort"; exit 1; }

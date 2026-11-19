@@ -1,0 +1,15 @@
+[pp] === ppsact: env GOMP_CPU_AFFINITY=0,1,6-11 OMP_WAIT_POLICY=ACTIVE -s 33 --n-seq 64 --ctx-seq 256 --configs 32x2,64x2 (16:12:52 UTC)
+ppsact_first_1119_0409.log
+# start: 2026-11-19T04:09:18+00:00
+# exit=0 end: 2026-11-19T04:19:36+00:00
+[ctx] n_ctx 16384, n_batch 8192, n_seq_max 64, kv_unified 1, swa_full 0, kv f16, load dio, rss 18099 MiB
+[verify] rows 61  top1 agree 61/61  worst max_abs 0.000e+00  -> PASS
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 40.70 s  -> 25.16 t/s total, 0.786 t/s per seq  | busy A 90%  B 99%  | prefix 0 tok shared (0 new seq) 0.0 s | prefill 57.7 s | seq0 vs ref 32/32
+[config 64x2] R 64  M 2  per-mb 32  gen 32 tok/seq  time 80.98 s  -> 25.29 t/s total, 0.395 t/s per seq  | busy A 91%  B 99%  | prefix 0 tok shared (0 new seq) 0.0 s | prefill 119.9 s | seq0 vs ref 32/32
+min avail MiB 6391 tmax 73000
+ppsact_last_1119_0409.log
+# start: 2026-11-19T04:09:15+00:00
+# exit=143 end: 2026-11-19T04:19:48+00:00
+min avail MiB 9456 tmax 72000
+[pp] ppsact done (16:23:33 UTC)
+exit 0

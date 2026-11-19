@@ -35,7 +35,7 @@ node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llam
 - 網路：雙 5GbE（`enp49s0`、`enp97s0`，Realtek RTL8126，驅動 `r8126`）。`enp97s0` 接交換器（只支援 100Mb/s，待換），用於管理與上網。
 - **2026-11-13 起改用 2.5GbE 交換器**：兩板 `enp97s0` 協商到 2500Mb/s，iperf3 雙向 2.35 Gbit/s、0 重傳，小封包 RTT 0.51 ms。**板子之間的資料傳輸走交換器的 192.168.137.x**。剛開機的前 1–2 分鐘頻寬不穩，量測前先等開機完成。
 - 直連線（`enp49s0`）目前已拔除。設定仍保留在 NetworkManager「Wired connection 1」（node1 `10.0.0.1`、node2 `10.0.0.2`），插回就能用。曾測到 5000Mb/s、4.71 Gbit/s。
-- 板子沒有 RTC 電池且無法 NTP，**每次開機時鐘都會停在上次關機的時間**，log 的時間戳記會錯，需要手動對時。
+- 板子沒有 RTC 電池，**每次開機時鐘都會停在上次關機的時間**。2026-11-19 起 node2 向 node1 對時（chrony，`/etc/chrony/conf.d/cluster.conf`），兩板時間一致；node1 有外網時才會對到正確時間，否則絕對時間要以 PC 為準。
 - 系統：Ubuntu 24.04、GCC 13.3。
 
 ---
@@ -43,7 +43,7 @@ node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llam
 ## 3. 必守規則（這些都是踩過的坑）
 
 1. **只用 `build-cpu-opt`。** 含 Vulkan 的 `build` 會讓 CPU 運算慢約 35 倍；舊的 `build-cpu` 沒有開加速指令。
-2. **量測前確認 CPU 調頻模式**：`cat /sys/devices/system/cpu/cpufreq/policy*/scaling_governor` 必須全部是 `performance`。若不是，請使用者在板子上執行 `~/set_perf.sh`（需要 sudo 密碼，你無法代為輸入）。
+2. **量測前確認 CPU 調頻模式**：`cat /sys/devices/system/cpu/cpufreq/policy*/scaling_governor` 必須全部是 `performance`。2026-11-19 起開機會由 `cpu-performance.service` 自動設定；若不是，請使用者在板子上執行 `~/set_perf.sh`（需要 sudo 密碼，你無法代為輸入）。
 3. **標準量測參數**：`taskset -c 0,1,6-11`、`-t 8`、`-r 5`、`-o json`（看每次的個別數值）。`llama-bench` 加 `-lm none`（此版本用 `-lm`，不是 `-mmp`）。MoE 的 prompt 處理一律用 `-p 512`（短 prompt 會因專家負載不均而大幅波動）。
 4. **長時間實驗在板子背景執行**，不依賴 SSH 連線：
    `ssh node1 'cd ~/llama.cpp && mkdir -p results && nohup <指令> > results/<名稱>_$(date +%m%d_%H%M).log 2>&1 &'`
@@ -97,18 +97,19 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 重複量測 | 同一次載入內 3 次標準差 ≤ 0.006 t/s；跨天 32x2 為 24.88 / 24.76 / 24.79（0.25%）。短對話 16 / 32 人：管線 18.49 / 24.79，資料平行 18.15 / 24.64 t/s（`results/6.15_repeatability.md`） |
 | 切點 34 / 35（短對話 f16） | 32x2 **25.43** / 25.56、64x2 **25.66** / 25.74 t/s（比切點 33 快 2.5–3.2%）；忙碌 34 層 95% / 98%、35 層 98% / 96%（瓶頸換到前段）。切點 34 的容量（前段限制）q8_0 49 / 39 / 31 / 14 人、f16 26 / 20 / 16 / 7 人（比 33 少 0–2 人）。長對話（q8_0、各自 4K）切點 34 反而慢約 2%（8 人 9.54、16 人 10.51 t/s；前段 99% 忙碌），32 人因學校斷電未量。**預設切點維持 33**（`results/6.16_split_point_34_35.md`） |
 | 長時間滿載（2026-11-19） | 兩板用 100 W 電源連續滿載約 78 分鐘（長對話測試），最高 72 / 75°C、記憶體正常；之後學校斷電讓 node2 停止（node1 與交換器沒斷電），不是板子問題。可視為 1 小時以上滿載穩定的初步證據（`6.16`） |
+| 系統設定與調校（2026-11-19） | 開機自動 `performance`、swappiness 100 → 10、node2 向 node1 對時、標準答案移到 node1 `~/stage_ref_31b.bin`（`board_setup.sh`）。`OMP_WAIT_POLICY=ACTIVE`：管線短對話 32 / 64 人 24.75 / 25.07 → 25.10 / 25.24 t/s（+0.7–1.4%），再加 `GOMP_CPU_AFFINITY=0,1,6-11` 為 25.16 / 25.29（+0.9–1.7%）。ubatch 256 / 512 / 1024 對 prompt 處理無影響（13.9 t/s）。權重重排已全部啟用（`results/6.17_board_setup_and_tuning.md`） |
 
 **進度總報告**：`results/REPORT_2026-11-13.md`。
 
 **供電**：node2 原本的 60 W 電源線在長時間 8 核滿載時會讓整台當機；2026-11-18 換上新線後，32x2 與 pp5 都完整跑完（最高 73°C）。2026-11-19 兩板連續滿載約 78 分鐘正常（最高 75°C），之後因學校斷電中斷。每張板子都要用 PD 20V⎓5A（100 W）的電源。前段程序要加 `timeout`，後段當機時才不會無限等待。
 
-**網路共用**：電腦用 Wi-Fi 上網，共用設定為「Wi-Fi → 乙太網路」，乙太網路為 192.168.137.1。**交換器不可接到學校網路**（ICS 會在學校網路上發 DHCP，導致電腦斷網）。板子因此能上網，node1 已自動 NTP 對時；node2 的 NTP 先前被關閉，時鐘仍不準。
+**網路共用**：電腦用 Wi-Fi 上網，共用設定為「Wi-Fi → 乙太網路」，乙太網路為 192.168.137.1。**交換器不可接到學校網路**（ICS 會在學校網路上發 DHCP，導致電腦斷網）。板子因此能上網（2026-11-19 時兩板都連不上外網）；node2 向 node1 對時。
 
 **注意**：`llama_context_default_params()` 的 `swa_full` 預設為 `true`（滑動視窗層的 KV 開到整個上下文），llama-server 等工具預設為 `false`。自寫工具量容量時要設 `swa_full = false`。
 
-**下一步**：micro-batch 12 人比 8、16 人慢的原因（`llama-batched-bench -npl 12,16,24` 單板驗證）；2 小時以上不中斷滿載（78 分鐘已初步通過）；`--no-kvu`（需 `results/patches/llama-context-embd-all.patch`，兩板已套用，預期收益 ≤5%）。量測變異約 0.05%（同次載入）/ 0.25%（跨天），每個組態量 1 次即可。`llama-batched-bench` 不加 `-kvu` 時，`-c` 除以人數就是每區上下文，`-c` 加大會讓滑動視窗層 KV 跟著變大（`-c 8192`、每板 16 人會記憶體不足）。`llama-pp-stage` 新增 `--role mid`（`-s A -e B --stage-id k`）、`--distinct`、`--kv-type`、`--no-kvu`、`--mmap`；`llama-cap-test` 新增 `--kv-type`、`--no-kvu`、`--mmap`。協調腳本在 `results/scripts/`。交接文件：`HANDOFF_2026-11-19.md`。node1 有 swap（swappiness 100），記憶體接近極限的實驗容易被監控程式停止。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
+**下一步**：micro-batch 12 人比 8、16 人慢的原因（`llama-batched-bench -npl 12,16,24` 單板驗證）；2 小時以上不中斷滿載（78 分鐘已初步通過）；`--no-kvu`（需 `results/patches/llama-context-embd-all.patch`，兩板已套用，預期收益 ≤5%）。量測變異約 0.05%（同次載入）/ 0.25%（跨天），每個組態量 1 次即可。`llama-batched-bench` 不加 `-kvu` 時，`-c` 除以人數就是每區上下文，`-c` 加大會讓滑動視窗層 KV 跟著變大（`-c 8192`、每板 16 人會記憶體不足）。`llama-pp-stage` 新增 `--role mid`（`-s A -e B --stage-id k`）、`--distinct`、`--kv-type`、`--no-kvu`、`--mmap`；`llama-cap-test` 新增 `--kv-type`、`--no-kvu`、`--mmap`。協調腳本在 `results/scripts/`。交接文件：`HANDOFF_2026-11-19.md`。node1 有 4 GB swap（swappiness 已從 100 降到 10），記憶體接近極限的實驗仍可能被監控程式停止。標準答案在 node1 `~/stage_ref_31b.bin`（重開機不會消失）；若要重新產生，用 `llama-stage-test --mode ref`（約 10 分鐘）。管線前加 `PP_ENV="OMP_WAIT_POLICY=ACTIVE"`（`pp_run.sh`）可快約 1%。
 
-兩張板子開機後都要執行 `~/set_perf.sh`（需要 sudo），調頻才會是 `performance`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
+開機後調頻會自動是 `performance`（`cpu-performance.service`），不用再跑 `~/set_perf.sh`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
 
 ---
 

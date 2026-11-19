@@ -1,0 +1,15 @@
+[pp] === ppsact2: env OMP_WAIT_POLICY=ACTIVE -s 33 --n-seq 64 --ctx-seq 256 --configs 32x2,64x2 (16:23:48 UTC)
+ppsact2_first_1119_0420.log
+# start: 2026-11-19T04:20:14+00:00
+# exit=0 end: 2026-11-19T04:30:28+00:00
+[ctx] n_ctx 16384, n_batch 8192, n_seq_max 64, kv_unified 1, swa_full 0, kv f16, load dio, rss 18099 MiB
+[verify] rows 61  top1 agree 61/61  worst max_abs 0.000e+00  -> PASS
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 40.80 s  -> 25.10 t/s total, 0.784 t/s per seq  | busy A 90%  B 99%  | prefix 0 tok shared (0 new seq) 0.0 s | prefill 57.7 s | seq0 vs ref 32/32
+[config 64x2] R 64  M 2  per-mb 32  gen 32 tok/seq  time 81.13 s  -> 25.24 t/s total, 0.394 t/s per seq  | busy A 90%  B 99%  | prefix 0 tok shared (0 new seq) 0.0 s | prefill 119.9 s | seq0 vs ref 32/32
+min avail MiB 6391 tmax 73000
+ppsact2_last_1119_0420.log
+# start: 2026-11-19T04:20:11+00:00
+# exit=143 end: 2026-11-19T04:30:45+00:00
+min avail MiB 9458 tmax 72000
+[pp] ppsact2 done (16:34:30 UTC)
+exit 0

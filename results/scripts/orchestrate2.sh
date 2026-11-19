@@ -5,7 +5,7 @@
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=30"
 BIN=/home/orangepi/llama.cpp-pp/build-pp/bin/llama-pp-stage
 MODEL=models/gemma-4-31B-it-Q4_0.gguf
-REF=/tmp/stage_ref_31b.bin
+REF=/home/orangepi/stage_ref_31b.bin
 
 # the reference lives in node1:/tmp and is lost on reboot; its content does not depend on CPU frequency
 if ! $SSH node1 "test -s $REF"; then

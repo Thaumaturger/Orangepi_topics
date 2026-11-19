@@ -7,7 +7,7 @@
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=30"
 MODEL=models/gemma-4-31B-it-Q4_0.gguf
 BIN=/home/orangepi/llama.cpp-pp/build-pp/bin/llama-pp-stage
-REF=/tmp/stage_ref_31b.bin
+REF=/home/orangepi/stage_ref_31b.bin
 DP="taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-batched-bench -m $MODEL -c 16384 -npp 4000 -ntg 32 -npl 1,4 -pps -lm dio -t 8"
 
 busy() {   # $1 node, $2 run_bench name prefix; returns 0 while running or unreachable

@@ -1,0 +1,7 @@
+# node: node2
+# commit: 330f0189c
+# start: 2026-11-19T03:32:14+00:00
+# governor: performance 
+# mem: used=6818M cache=460M avail=24863M swap_used=0M 
+# cmd: taskset -c 0,1,6-11 ./build-cpu-opt/bin/llama-bench -m models/gemma-4-31B-it-Q4_0.gguf -p 1024 -n 0 -b 2048 -ub 256,512,1024 -r 2 -lm dio -t 8 -o json > results/tune_ub_1119_0332.out
+# exit=0 end: 2026-11-19T03:52:22+00:00
