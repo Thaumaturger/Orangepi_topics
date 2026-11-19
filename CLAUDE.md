@@ -93,6 +93,8 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | KV 改 q8_0（`--kv-type q8_0`） | 容量約加倍：每人 1K/4K/8K/32K 管線 51 / 41 / 32 / 14 人，資料平行 20 / 16 / 12 / 4 人；各自 4K 開頭吞吐 8 人 9.75、**16 人 10.73 t/s（f16 的 1.44 倍）**；61 列中 60 列 top-1 與 f16 相同；prefill 慢約 18%。前段 mmap 會觸發 node1 swap，不可用（`6.13`） |
 | 短對話 32/48/64 人（切 33 層） | f16 24.76 / 23.44 / 24.94、q8_0 24.63 / 23.34 / 24.94 t/s：約 25 t/s 封頂，後段 99% 忙碌是瓶頸；短對話時 q8_0 不影響速度（`results/6.14_short_q8_and_three_stage.md`） |
 | 三段管線（`--role mid`） | node1 [0,20) → node2 [20,40) → node2 [40,60)：與單板逐位元相同，生成 token 32/32 一致；4 板串成 first → mid → mid → last（`6.14`） |
+| 長對話 q8_0、每人各自 4K，24 / 32 人 | 管線 11.10 / **12.98 t/s**（資料平行最多 16 人 10.98），32 人時前段剩 3.7 GB、後段 6.9 GB（`6.13`） |
+| 重複量測 | 同一次載入內 3 次標準差 ≤ 0.006 t/s；跨天 32x2 為 24.88 / 24.76 / 24.79（0.25%）。短對話 16 / 32 人：管線 18.49 / 24.79，資料平行 18.15 / 24.64 t/s（`results/6.15_repeatability.md`） |
 
 **進度總報告**：`results/REPORT_2026-11-13.md`。
 
@@ -102,7 +104,7 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 
 **注意**：`llama_context_default_params()` 的 `swa_full` 預設為 `true`（滑動視窗層的 KV 開到整個上下文），llama-server 等工具預設為 `false`。自寫工具量容量時要設 `swa_full = false`。
 
-**下一步**：q8_0 下 24、32 人的長對話；`--no-kvu`（需 `results/patches/llama-context-embd-all.patch`，兩板已套用，預期收益 ≤5%）；切點對容量與吞吐的取捨；重複量測取標準差。`llama-pp-stage` 新增 `--role mid`（`-s A -e B --stage-id k`）、`--distinct`、`--kv-type`、`--no-kvu`、`--mmap`；`llama-cap-test` 新增 `--kv-type`、`--no-kvu`、`--mmap`。協調腳本在 `results/scripts/`。交接文件：`HANDOFF_2026-11-19.md`。node1 有 swap（swappiness 100），記憶體接近極限的實驗容易被監控程式停止。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
+**下一步**：切點 34 的短對話 32x2、64x2；micro-batch 12 人比 8、16 人慢的原因（`llama-batched-bench -npl 12,16,24` 單板驗證）；30 分鐘以上滿載；`--no-kvu`（需 `results/patches/llama-context-embd-all.patch`，兩板已套用，預期收益 ≤5%）。量測變異約 0.05%（同次載入）/ 0.25%（跨天），每個組態量 1 次即可。`llama-batched-bench` 不加 `-kvu` 時，`-c` 除以人數就是每區上下文，`-c` 加大會讓滑動視窗層 KV 跟著變大（`-c 8192`、每板 16 人會記憶體不足）。`llama-pp-stage` 新增 `--role mid`（`-s A -e B --stage-id k`）、`--distinct`、`--kv-type`、`--no-kvu`、`--mmap`；`llama-cap-test` 新增 `--kv-type`、`--no-kvu`、`--mmap`。協調腳本在 `results/scripts/`。交接文件：`HANDOFF_2026-11-19.md`。node1 有 swap（swappiness 100），記憶體接近極限的實驗容易被監控程式停止。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
 
 兩張板子開機後都要執行 `~/set_perf.sh`（需要 sudo），調頻才會是 `performance`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
 

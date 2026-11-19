@@ -1,0 +1,13 @@
+[load] first layers [0, 33)  292.2 s  rss 10225 MiB
+[ctx] n_ctx 131072, n_batch 8192, n_seq_max 32, kv_unified 1, swa_full 0, kv q8_0, load dio, rss 20729 MiB
+[first] connecting to 192.168.137.31:9000 ...
+[first] connected
+[verify] rows 61  top1 agree 60/61  worst max_abs 1.129e+00  -> FAIL
+[config  8x2] R  8  M 2  per-mb  4  gen 32 tok/seq  time 26.23 s  -> 9.76 t/s total, 1.220 t/s per seq  | busy A 98%  B 94%  | prefix 4000 tok own (8 new seq) 1941.2 s | prefill 31.2 s | seq0 vs ref 0/0
+[config  8x2] R  8  M 2  per-mb  4  gen 32 tok/seq  time 26.22 s  -> 9.76 t/s total, 1.221 t/s per seq  | busy A 98%  B 94%  | prefix 4000 tok own (0 new seq) 0.0 s | prefill 31.2 s | seq0 vs ref 0/0
+[config  8x2] R  8  M 2  per-mb  4  gen 32 tok/seq  time 26.21 s  -> 9.77 t/s total, 1.221 t/s per seq  | busy A 98%  B 94%  | prefix 4000 tok own (0 new seq) 0.0 s | prefill 31.1 s | seq0 vs ref 0/0
+[config 16x2] R 16  M 2  per-mb  8  gen 32 tok/seq  time 47.65 s  -> 10.74 t/s total, 0.672 t/s per seq  | busy A 98%  B 95%  | prefix 4000 tok own (8 new seq) 1943.3 s | prefill 62.2 s | seq0 vs ref 0/0
+[config 16x2] R 16  M 2  per-mb  8  gen 32 tok/seq  time 47.64 s  -> 10.75 t/s total, 0.672 t/s per seq  | busy A 98%  B 95%  | prefix 4000 tok own (0 new seq) 0.0 s | prefill 62.2 s | seq0 vs ref 0/0
+[config 16x2] R 16  M 2  per-mb  8  gen 32 tok/seq  time 47.63 s  -> 10.75 t/s total, 0.672 t/s per seq  | busy A 98%  B 95%  | prefix 4000 tok own (0 new seq) 0.0 s | prefill 62.1 s | seq0 vs ref 0/0
+[config 24x2] R 24  M 2  per-mb 12  gen 32 tok/seq  time 69.17 s  -> 11.10 t/s total, 0.463 t/s per seq  | busy A 98%  B 96%  | prefix 4000 tok own (8 new seq) 1944.7 s | prefill 93.3 s | seq0 vs ref 0/0
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 78.90 s  -> 12.98 t/s total, 0.406 t/s per seq  | busy A 98%  B 98%  | prefix 4000 tok own (8 new seq) 1946.5 s | prefill 123.7 s | seq0 vs ref 0/0
