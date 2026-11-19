@@ -3,9 +3,23 @@
 //   last stage (e.g. node2):  llama-pp-stage --role last  -m model.gguf -s S -N n_layer --listen 0.0.0.0:9000 [--n-seq 32] [-t 8]
 //   first stage (e.g. node1): llama-pp-stage --role first -m model.gguf -s S --next 10.0.0.2:9000 --ref ref.bin
 //                                            [--configs 1x1,2x2,8x2] [-n 32] [--n-seq 32] [-t 8] [--no-verify]
-//                                            [--ctx-seq 256] [--prefix N]
+//                                            [--ctx-seq 256] [--prefix N] [--distinct]
+//   middle stage (3+ stages):  llama-pp-stage --role mid -m model.gguf -s A -e B --listen host:port --next host:port
+//                              [--stage-id 1] [--n-seq 32] [--ctx-seq 256] [-t 8]
+//                              runs layers [A, B), forwards the hidden state to --next and passes the replies back;
+//                              its compute time goes back in pp_rsp.t_mid_ms[stage-id - 1], so the first stage can
+//                              print every stage's busy fraction (stage-id 1..3 in chain order)
+// all roles also take [--kv-type f16|q8_0|q4_0] [--no-kvu] [--mmap]
+// --kv-type : KV cache element type (default f16)
+// --no-kvu  : one KV stream per sequence instead of one unified KV buffer
+// --mmap    : load with mmap instead of direct I/O; tensors that are not repacked (the token embedding table)
+//             then stay in the page cache, so only the rows that are used take memory
 // --prefix N: every sequence starts with the same N-token prefix (filled once on sequence 0, then copied with
 //             llama_memory_seq_cp on both stages), so generation runs with an N-token context per sequence
+// --distinct: with --prefix, every sequence gets its own N-token prefix computed through both stages (its own
+//             KV cells, like separate conversations). Sequences are filled incrementally: with configs in
+//             ascending R, a config only fills the sequences the previous one did not have, and the previous
+//             config's prompt and generation are removed with llama_memory_seq_rm(-1, N, -1)
 //
 // The first stage runs layers [0, S) and sends the hidden state (fp32, n_tokens x n_embd) plus per-row
 // (pos, seq_id, output) to the last stage, which runs layers [S, N) + lm head and returns either logits rows
@@ -26,6 +40,9 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <deque>
+#include <mutex>
+#include <thread>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -44,6 +61,7 @@ enum pp_msg_type : uint32_t {
     PP_QUIT     = 3, // close this connection
     PP_SHUTDOWN = 4, // close and exit the server
     PP_SEQCP    = 5, // copy sequence 0 to sequences 1..n_tokens-1 (shared prefix), no payload
+    PP_SEQRM    = 6, // remove every sequence's cells at positions >= n_tokens, no payload (n_rows -1 on failure)
 };
 
 #pragma pack(push, 1)
@@ -64,6 +82,7 @@ struct pp_rsp {
     int32_t  n_rows;      // number of output rows
     int32_t  n_vocab;     // 0 when tokens are returned
     float    t_compute_ms;
+    float    t_mid_ms[3]; // compute time of middle stages 1..3 for this request (0 when absent)
 };
 #pragma pack(pop)
 
@@ -118,16 +137,29 @@ static void split_hostport(const std::string & s, std::string & host, std::strin
     port = s.substr(c + 1);
 }
 
+// KV cache element type by name (K and V use the same type; quantized V needs flash attention, which is on by default)
+static ggml_type kv_type_from_name(const std::string & s) {
+    if (s == "f16")  return GGML_TYPE_F16;
+    if (s == "q8_0") return GGML_TYPE_Q8_0;
+    if (s == "q4_0") return GGML_TYPE_Q4_0;
+    fprintf(stderr, "unknown --kv-type %s (f16, q8_0, q4_0)\n", s.c_str());
+    exit(1);
+}
+
 struct opts_t {
     std::string role, model, listen = "0.0.0.0:9000", next, ref, configs = "1x1";
-    int split = -1, n_layer = -1, n_gen = 32, n_threads = 8, n_seq = 32, n_ctx_seq = 256;
+    int split = -1, end = -1, stage_id = 1, n_layer = -1, n_gen = 32, n_threads = 8, n_seq = 32, n_ctx_seq = 256;
     int prefix = 0; // > 0: every sequence starts with the same prefix of this many tokens (filled once, then copied)
+    bool distinct = false; // with prefix: each sequence gets its own prefix (own KV cells) instead of a copy
+    std::string kv_type = "f16";
+    bool kv_unified = true;
+    bool mmap = false;
     bool verify = true;
 };
 
 static llama_model * load_stage(const opts_t & o, int a, int b, const char * name) {
     llama_model_params mp = llama_model_default_params();
-    mp.load_mode   = LLAMA_LOAD_MODE_DIRECT_IO;
+    mp.load_mode   = o.mmap ? LLAMA_LOAD_MODE_MMAP : LLAMA_LOAD_MODE_DIRECT_IO;
     mp.layer_start = a;
     mp.layer_end   = b;
     const double t0 = now_s();
@@ -150,14 +182,19 @@ static llama_context * make_ctx(const opts_t & o, llama_model * m, bool embeddin
     cp.pooling_type    = LLAMA_POOLING_TYPE_NONE;
     // unified KV: lets llama.cpp put all sequences of a micro-batch in one ubatch (split_simple).
     // without it, embeddings=true (first stage) makes the KV cache split the batch one sequence per
-    // ubatch (split_seq), so a batch of K sequences costs K single-token passes (see 6.8_pipeline_sweep.md)
-    cp.kv_unified      = true;
+    // ubatch (split_seq), so a batch of K sequences costs K single-token passes (see 6.8_pipeline_sweep.md).
+    // --no-kvu (one KV stream per sequence) needs llama-context-embd-all.patch, which keeps split_seq for
+    // non-causal attention and pooling only
+    cp.kv_unified      = o.kv_unified;
     // sliding-window layers keep n_swa cells per sequence, as llama-server does (the library default is full size)
     cp.swa_full        = false;
+    cp.type_k          = kv_type_from_name(o.kv_type);
+    cp.type_v          = cp.type_k;
     llama_context * c = llama_init_from_model(m, cp);
     if (!c) die("failed to create context");
-    printf("[ctx] n_ctx %u, n_batch %u, n_seq_max %u, kv_unified %d, swa_full %d, rss %ld MiB\n",
-           cp.n_ctx, cp.n_batch, cp.n_seq_max, (int) cp.kv_unified, (int) cp.swa_full, rss_mib());
+    printf("[ctx] n_ctx %u, n_batch %u, n_seq_max %u, kv_unified %d, swa_full %d, kv %s, load %s, rss %ld MiB\n",
+           cp.n_ctx, cp.n_batch, cp.n_seq_max, (int) cp.kv_unified, (int) cp.swa_full, o.kv_type.c_str(),
+           o.mmap ? "mmap" : "dio", rss_mib());
     fflush(stdout);
     return c;
 }
@@ -208,13 +245,19 @@ static int run_last(const opts_t & o) {
             if (rq.magic != PP_MAGIC) { fprintf(stderr, "bad magic\n"); break; }
             if (rq.type == PP_RESET) {
                 llama_memory_clear(llama_get_memory(c), true);
-                pp_rsp rs = { PP_MAGIC, 0, 0, 0.0f };
+                pp_rsp rs = { PP_MAGIC, 0, 0, 0.0f, { 0.0f, 0.0f, 0.0f } };
                 send_all(fd, &rs, sizeof(rs));
                 continue;
             }
             if (rq.type == PP_SEQCP) {
                 for (int s = 1; s < rq.n_tokens; ++s) llama_memory_seq_cp(llama_get_memory(c), 0, s, -1, -1);
-                pp_rsp rs = { PP_MAGIC, 0, 0, 0.0f };
+                pp_rsp rs = { PP_MAGIC, 0, 0, 0.0f, { 0.0f, 0.0f, 0.0f } };
+                send_all(fd, &rs, sizeof(rs));
+                continue;
+            }
+            if (rq.type == PP_SEQRM) {
+                const bool ok = llama_memory_seq_rm(llama_get_memory(c), -1, rq.n_tokens, -1);
+                pp_rsp rs = { PP_MAGIC, ok ? 0 : -1, 0, 0.0f, { 0.0f, 0.0f, 0.0f } };
                 send_all(fd, &rs, sizeof(rs));
                 continue;
             }
@@ -240,7 +283,7 @@ static int run_last(const opts_t & o) {
             }
             if (llama_decode(c, b) != 0) { fprintf(stderr, "decode failed\n"); break; }
 
-            pp_rsp rs = { PP_MAGIC, n_out, rq.want_logits ? n_vocab : 0, 0.0f };
+            pp_rsp rs = { PP_MAGIC, n_out, rq.want_logits ? n_vocab : 0, 0.0f, { 0.0f, 0.0f, 0.0f } };
             if (rq.want_logits) {
                 out_f.resize((size_t) n_out * n_vocab);
                 for (int i = 0, j = 0; i < n; ++i) {
@@ -322,6 +365,9 @@ struct first_t {
     std::vector<float>   logits;
     std::vector<int32_t> toks;
     double busy_a = 0.0, busy_b = 0.0;
+    double busy_m[3] = { 0.0, 0.0, 0.0 }; // middle stages, in chain order
+    void clear_busy() { busy_a = busy_b = 0.0; busy_m[0] = busy_m[1] = busy_m[2] = 0.0; }
+    int filled = 0; // --distinct: sequences 0..filled-1 hold their own prefix on both stages
 
     explicit first_t(const opts_t & o) : o(o) {}
 
@@ -351,6 +397,7 @@ struct first_t {
         else             { toks.resize(rs.n_rows);                 ok = recv_all(fd, toks.data(),   sizeof(int32_t) * toks.size()); }
         if (!ok) die("recv failed");
         busy_b += rs.t_compute_ms / 1000.0;
+        for (int k = 0; k < 3; ++k) busy_m[k] += rs.t_mid_ms[k] / 1000.0;
         return rs.n_rows;
     }
 
@@ -359,7 +406,7 @@ struct first_t {
         pp_req rq = { PP_MAGIC, PP_RESET, 0, n_embd, 0 };
         pp_rsp rs;
         if (!send_all(fd, &rq, sizeof(rq)) || !recv_all(fd, &rs, sizeof(rs))) die("reset failed");
-        busy_a = busy_b = 0.0;
+        clear_busy();
     }
 
     // both stages: copy sequence 0 to sequences 1..R-1
@@ -368,6 +415,14 @@ struct first_t {
         pp_req rq = { PP_MAGIC, PP_SEQCP, R, n_embd, 0 };
         pp_rsp rs;
         if (!send_all(fd, &rq, sizeof(rq)) || !recv_all(fd, &rs, sizeof(rs))) die("seq_cp failed");
+    }
+
+    // both stages: remove every sequence's cells at positions >= p0
+    void seq_rm(int p0) {
+        if (!llama_memory_seq_rm(llama_get_memory(c), -1, p0, -1)) die("seq_rm (first) failed");
+        pp_req rq = { PP_MAGIC, PP_SEQRM, p0, n_embd, 0 };
+        pp_rsp rs;
+        if (!send_all(fd, &rq, sizeof(rq)) || !recv_all(fd, &rs, sizeof(rs)) || rs.n_rows != 0) die("seq_rm (last) failed");
     }
 };
 
@@ -407,11 +462,35 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
     const int G = F.o.n_gen;
     const int P = F.o.prefix; // shared prefix length; the prompt and generation follow it
     if (P + n + G > F.o.n_ctx_seq) { printf("[config %dx%d] skipped (prefix + prompt + gen > ctx-seq)\n", R, M); return; }
-    F.reset();
+    const bool distinct = F.o.distinct && P > 0;
+    if (!distinct || F.filled == 0 || R < F.filled) { F.reset(); F.filled = 0; }
+    else F.seq_rm(P); // keep each sequence's own prefix, drop the previous config's prompt and generation
+
+    double t_prefix = 0.0;
+    int n_new = 0;
+    if (distinct) {
+        // own prefix per sequence for sequences filled..R-1, chunks of 512; the last stage handles batches in
+        // the order they arrive, so two chunks are kept in flight and both boards work at the same time
+        const double tq0 = now_s();
+        int inflight = 0;
+        for (int s = F.filled; s < R; ++s) {
+            for (int p0 = 0; p0 < P; p0 += 512) {
+                const int len = std::min(512, P - p0);
+                std::vector<llama_token> tk(len);
+                std::vector<pp_row> meta(len);
+                for (int i = 0; i < len; ++i) { tk[i] = r.prompt[(p0 + i + 7 * s) % n]; meta[i] = { p0 + i, s, 0 }; }
+                F.send_batch(tk, meta, false);
+                if (++inflight == 2) { F.recv_reply(false); --inflight; }
+            }
+        }
+        while (inflight-- > 0) F.recv_reply(false);
+        n_new = R - F.filled;
+        F.filled = R;
+        t_prefix = now_s() - tq0;
+    }
 
     // shared prefix: fill sequence 0 in chunks of 512 through both stages, then copy it to every sequence
-    double t_prefix = 0.0;
-    if (P > 0) {
+    if (P > 0 && !distinct) {
         const double tq0 = now_s();
         for (int p0 = 0; p0 < P; p0 += 512) {
             const int len = std::min(512, P - p0);
@@ -444,7 +523,7 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
     // generation: keep every micro-batch in flight; the reply of micro-batch mb (round t) arrives while
     // the first stage is computing micro-batch mb+1, so the two boards work at the same time
     std::vector<llama_token> seq0;
-    F.busy_a = F.busy_b = 0.0;
+    F.clear_busy();
     const double t0 = now_s();
     for (int t = 0; t < G; ++t) {
         for (int mb = 0; mb < M; ++mb) {
@@ -467,10 +546,138 @@ static void config_pass(first_t & F, const ref_t & r, int R, int M) {
     const int n_cmp = P > 0 ? 0 : std::min<int>((int) seq0.size(), (int) r.gen.size());
     for (int i = 0; i < n_cmp; ++i) agree += seq0[i] == r.gen[i];
     const double tps = (double) R * G / t_gen;
+    std::string mids;
+    for (int k = 0; k < 3; ++k) {
+        if (F.busy_m[k] > 0.0) { char buf[32]; snprintf(buf, sizeof(buf), "  M%d %.0f%%", k + 1, 100.0 * F.busy_m[k] / t_gen); mids += buf; }
+    }
     printf("[config %2dx%d] R %2d  M %d  per-mb %2d  gen %d tok/seq  time %.2f s  -> %.2f t/s total, %.3f t/s per seq  "
-           "| busy A %.0f%%  B %.0f%%  | prefix %d tok %.1f s | prefill %.1f s | seq0 vs ref %d/%d\n",
-            R, M, R, M, K, G, t_gen, tps, tps / R, 100.0 * F.busy_a / t_gen, 100.0 * F.busy_b / t_gen, P, t_prefix, t_prefill, agree, n_cmp);
+           "| busy A %.0f%%%s  B %.0f%%  | prefix %d tok %s (%d new seq) %.1f s | prefill %.1f s | seq0 vs ref %d/%d\n",
+            R, M, R, M, K, G, t_gen, tps, tps / R, 100.0 * F.busy_a / t_gen, mids.c_str(), 100.0 * F.busy_b / t_gen, P,
+            distinct ? "own" : "shared", distinct ? n_new : (P > 0 ? 1 : 0), t_prefix, t_prefill, agree, n_cmp);
     fflush(stdout);
+}
+
+// ------------------------------------------------------------------ middle stage (server and client)
+
+// payload size of a reply: argmax tokens or logits rows of the output rows; control replies have none
+static size_t rsp_payload_bytes(const pp_rsp & rs) {
+    if (rs.n_rows <= 0) return 0;
+    return (size_t) rs.n_rows * (rs.n_vocab > 0 ? sizeof(float) * (size_t) rs.n_vocab : sizeof(int32_t));
+}
+
+static int run_mid(const opts_t & o) {
+    if (o.split <= 0 || o.end <= o.split) die("mid stage needs -s A -e B with 0 < A < B");
+    if (o.next.empty()) die("mid stage needs --next");
+    if (o.stage_id < 1 || o.stage_id > 3) die("--stage-id must be 1..3");
+    llama_model * m = load_stage(o, o.split, o.end, "mid");
+    llama_context * c = make_ctx(o, m, true);
+    const int n_embd = llama_model_n_embd(m);
+    const int n_max  = std::min(o.n_seq * o.n_ctx_seq, 8192);
+
+    std::string host, port;
+    split_hostport(o.listen, host, port);
+    const int ls = socket(AF_INET, SOCK_STREAM, 0);
+    int one = 1;
+    setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    sockaddr_in addr = {};
+    addr.sin_family = AF_INET;
+    addr.sin_port   = htons((uint16_t) std::atoi(port.c_str()));
+    if (inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) die("bad listen address");
+    if (bind(ls, (sockaddr *) &addr, sizeof(addr)) != 0) die("bind failed");
+    if (listen(ls, 1) != 0) die("listen failed");
+    printf("[mid] layers [%d, %d), stage-id %d, listening on %s, next %s\n", o.split, o.end, o.stage_id, o.listen.c_str(), o.next.c_str());
+    fflush(stdout);
+
+    llama_batch b = llama_batch_init(n_max, n_embd, 1);
+    std::vector<float>  embd, hidden;
+    std::vector<pp_row> rows;
+
+    bool running = true;
+    while (running) {
+        const int pfd = accept(ls, nullptr, nullptr);
+        if (pfd < 0) continue;
+        set_nodelay(pfd);
+        const int nfd = connect_to(o.next);
+        printf("[mid] client connected, next connected\n");
+        fflush(stdout);
+
+        // compute time of each forwarded request that expects a reply, in order (replies come back in order)
+        std::mutex mu;
+        std::deque<float> t_queue;
+        double busy = 0.0;
+        const double t_session = now_s();
+
+        // replies: next -> previous, adding this stage's compute time
+        std::thread up([&]() {
+            pp_rsp rs;
+            std::vector<char> payload;
+            while (recv_all(nfd, &rs, sizeof(rs))) {
+                payload.resize(rsp_payload_bytes(rs));
+                if (!payload.empty() && !recv_all(nfd, payload.data(), payload.size())) break;
+                float t = 0.0f;
+                { std::lock_guard<std::mutex> lk(mu); if (!t_queue.empty()) { t = t_queue.front(); t_queue.pop_front(); } }
+                rs.t_mid_ms[o.stage_id - 1] += t;
+                if (!send_all(pfd, &rs, sizeof(rs))) break;
+                if (!payload.empty() && !send_all(pfd, payload.data(), payload.size())) break;
+            }
+        });
+        auto push_t = [&](float t) { std::lock_guard<std::mutex> lk(mu); t_queue.push_back(t); };
+
+        // requests: previous -> this stage -> next
+        pp_req rq;
+        while (recv_all(pfd, &rq, sizeof(rq))) {
+            if (rq.magic != PP_MAGIC) { fprintf(stderr, "bad magic\n"); break; }
+            if (rq.type == PP_RESET || rq.type == PP_SEQCP || rq.type == PP_SEQRM) {
+                llama_memory_t mem = llama_get_memory(c);
+                if (rq.type == PP_RESET) llama_memory_clear(mem, true);
+                if (rq.type == PP_SEQCP) for (int sq = 1; sq < rq.n_tokens; ++sq) llama_memory_seq_cp(mem, 0, sq, -1, -1);
+                if (rq.type == PP_SEQRM && !llama_memory_seq_rm(mem, -1, rq.n_tokens, -1)) die("seq_rm (mid) failed");
+                push_t(0.0f);
+                if (!send_all(nfd, &rq, sizeof(rq))) break;
+                continue;
+            }
+            if (rq.type == PP_QUIT || rq.type == PP_SHUTDOWN) {
+                send_all(nfd, &rq, sizeof(rq));
+                if (rq.type == PP_SHUTDOWN) running = false;
+                break;
+            }
+            if (rq.type != PP_BATCH || rq.n_embd != n_embd || rq.n_tokens <= 0 || rq.n_tokens > n_max) {
+                fprintf(stderr, "bad request\n");
+                break;
+            }
+            const int n = rq.n_tokens;
+            embd.resize((size_t) n * n_embd);
+            rows.resize(n);
+            if (!recv_all(pfd, embd.data(), embd.size() * sizeof(float))) break;
+            if (!recv_all(pfd, rows.data(), rows.size() * sizeof(pp_row))) break;
+
+            const double t0 = now_s();
+            b.n_tokens = n;
+            memcpy(b.embd, embd.data(), embd.size() * sizeof(float));
+            for (int i = 0; i < n; ++i) {
+                b.pos[i] = rows[i].pos; b.n_seq_id[i] = 1; b.seq_id[i][0] = rows[i].seq; b.logits[i] = 1;
+            }
+            if (llama_decode(c, b) != 0) { fprintf(stderr, "decode failed\n"); break; }
+            hidden.resize((size_t) n * n_embd);
+            for (int i = 0; i < n; ++i) memcpy(&hidden[(size_t) i * n_embd], llama_get_embeddings_ith(c, i), sizeof(float) * n_embd);
+            const double dt = now_s() - t0;
+            busy += dt;
+            push_t((float) (dt * 1000.0));
+            if (!send_all(nfd, &rq, sizeof(rq)) || !send_all(nfd, hidden.data(), hidden.size() * sizeof(float)) ||
+                !send_all(nfd, rows.data(), rows.size() * sizeof(pp_row))) break;
+        }
+        shutdown(nfd, SHUT_WR);  // the next stage closes after QUIT; the reply thread then ends
+        up.join();
+        close(nfd);
+        close(pfd);
+        printf("[mid] client disconnected (compute %.1f s of %.1f s)\n", busy, now_s() - t_session);
+        fflush(stdout);
+    }
+    close(ls);
+    llama_batch_free(b);
+    llama_free(c);
+    llama_model_free(m);
+    return 0;
 }
 
 static int run_first(const opts_t & o) {
@@ -518,6 +725,8 @@ int main(int argc, char ** argv) {
         else if (a == "-m")          o.model     = next();
         else if (a == "-s")          o.split     = std::atoi(next().c_str());
         else if (a == "-N")          o.n_layer   = std::atoi(next().c_str());
+        else if (a == "-e")          o.end       = std::atoi(next().c_str());
+        else if (a == "--stage-id")  o.stage_id  = std::atoi(next().c_str());
         else if (a == "-n")          o.n_gen     = std::atoi(next().c_str());
         else if (a == "-t")          o.n_threads = std::atoi(next().c_str());
         else if (a == "--n-seq")     o.n_seq     = std::atoi(next().c_str());
@@ -528,6 +737,10 @@ int main(int argc, char ** argv) {
         else if (a == "--configs")   o.configs   = next();
         else if (a == "--no-verify") o.verify    = false;
         else if (a == "--prefix")    o.prefix    = std::atoi(next().c_str());
+        else if (a == "--distinct")  o.distinct  = true;
+        else if (a == "--kv-type")   o.kv_type   = next();
+        else if (a == "--no-kvu")    o.kv_unified = false;
+        else if (a == "--mmap")      o.mmap      = true;
         else { fprintf(stderr, "unknown argument: %s\n", a.c_str()); return 1; }
     }
     if (o.model.empty()) die("-m model.gguf is required");
@@ -535,7 +748,8 @@ int main(int argc, char ** argv) {
     int rc = 1;
     if      (o.role == "last")  rc = run_last(o);
     else if (o.role == "first") { if (o.next.empty() || o.ref.empty()) die("first stage needs --next and --ref"); rc = run_first(o); }
-    else die("--role must be first or last");
+    else if (o.role == "mid")   rc = run_mid(o);
+    else die("--role must be first, mid or last");
     llama_backend_free();
     return rc;
 }

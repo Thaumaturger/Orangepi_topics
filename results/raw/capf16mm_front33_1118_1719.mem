@@ -1,0 +1,8 @@
+17:19:02 swap_kb=67128 avail_kb=25449936 psi_full10=60.86 cpu=00:00:00 hi=1 tmax=44000
+17:19:17 swap_kb=66616 avail_kb=25385340 psi_full10=12.30 cpu=00:00:00 hi=0 tmax=43000
+17:19:33 swap_kb=66616 avail_kb=25383320 psi_full10=2.48 cpu=00:00:01 hi=0 tmax=43000
+17:19:48 swap_kb=66616 avail_kb=25372716 psi_full10=0.61 cpu=00:00:01 hi=0 tmax=43000
+17:20:03 swap_kb=66616 avail_kb=25377012 psi_full10=0.12 cpu=00:00:01 hi=0 tmax=43000
+17:20:19 swap_kb=66104 avail_kb=25374768 psi_full10=0.02 cpu=00:00:01 hi=0 tmax=43000
+17:20:34 swap_kb=65592 avail_kb=25370744 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+17:20:49 target exited

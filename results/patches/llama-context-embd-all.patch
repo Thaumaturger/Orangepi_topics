@@ -1,0 +1,15 @@
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -2028,7 +2028,10 @@
+     // when computing embeddings, all tokens are output
+     const bool output_all   = cparams.embeddings;
+-    // non-causal attention needs the whole sequence in one ubatch
+-    const bool embd_all     = output_all || !cparams.causal_attn;
++    // non-causal attention needs the whole sequence in one ubatch, and so does pooling over a sequence.
++    // pipeline stages output the per-token hidden state (embeddings, no pooling) with causal attention, so the
++    // batch may be split like a normal causal batch (several sequences per ubatch with one KV stream each)
++    const bool embd_all     = !cparams.causal_attn ||
++                              (output_all && cparams.pooling_type != LLAMA_POOLING_TYPE_NONE);
+     const bool has_samplers = !sampling.samplers.empty();
+
+     const uint32_t n_seq_max = cparams.kv_unified ? LLAMA_MAX_SEQ : cparams.n_seq_max;

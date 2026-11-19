@@ -16,11 +16,11 @@
 | 節點 | IP | 角色 | 已知模型 | llama.cpp commit |
 | --- | --- | --- | --- | --- |
 | node1 | 192.168.137.30（`enp97s0`，100Mb/s） | Master + Stage 0 | gemma-4-31B-it-Q4_0、gemma-4-26B-A4B-it-Q4_0 | 330f0189c（已確認，2026-11-08） |
-| node2 | 192.168.137.31（`enp97s0`，100Mb/s）；hostname 已改為 `node2` | Stage 1 | gemma-4-31B-it-Q4_0（2026-11-10 從 node1 複製，SHA-256 相同）、Llama-3.3-70B-Instruct-IQ2_M | 330f0189c（已確認，2026-11-10） |
+| node2 | 192.168.137.31（`enp97s0`，100Mb/s）；hostname 已改為 `node2` | Stage 1 | gemma-4-31B-it-Q4_0（2026-11-10 從 node1 複製，SHA-256 相同） | 330f0189c（已確認，2026-11-10） |
 | node3 | TODO | Stage 2 | TODO | TODO |
 | node4 | TODO | Stage 3 | TODO | TODO |
 
-node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llama-3.3-70B」的那張板子。Qwen2.5-7B 已於 2026-11-10 經使用者同意刪除。系統碟同為 USB 隨身碟（54 GB），無 swap，時鐘無法 NTP 同步（已手動校正）。
+node2 即先前記錄的「IP 曾為 192.168.137.31、放有 Qwen2.5-7B 與 Llama-3.3-70B」的那張板子。Qwen2.5-7B 已於 2026-11-10、Llama-3.3-70B 與舊的 `build`、`build-cpu`、dLlama 舊檔已於 2026-11-19 經使用者同意刪除（系統碟 94% → 48%）。系統碟同為 USB 隨身碟（54 GB），無 swap，時鐘無法 NTP 同步（已手動校正）。
 
 切層版本：兩張板子都有 `~/llama.cpp-pp`（git worktree，branch `pp-layer-range`，尚未 commit）與 `build-pp`（同第 4 節參數）。內含 `llama-stage-test`（同程序兩段驗證）與 `llama-pp-stage`（跨程序 / 跨板 TCP 兩段）。改動也存在本機 `results/patches/`。
 第一次連線時，請先在每張板子執行 `hostname; ip -br addr; git -C ~/llama.cpp rev-parse --short HEAD; ls -lh ~/llama.cpp/models/*.gguf | grep -v vocab; df -h /`，把上表補完並回報。
@@ -89,6 +89,10 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 | 資料平行對照組（兩板同時各跑完整 31B） | 2/4/8/16/32 人合計 4.21 / 5.22 / 15.78 / 18.13 / 24.66 t/s，與管線相差 ±6% 內，僅 4 人時管線快 55%（`results/6.11_data_parallel_and_capacity.md`） |
 | 容量（保留 1 GB，`swa_full=false`） | 每人 1K / 4K / 8K / 32K token：資料平行 10 / 8 / 6 / 2 人，兩板管線 27 / 21 / 17 / 7 人（**2.6–3.5 倍**）；管線容量受前段限制（`llama-cap-test`，`results/6.11_data_parallel_and_capacity.md`） |
 | 長對話（每人 4K）吞吐 | 共用 KV 時 8 人：資料平行 10.40、管線 9.84 t/s（持平）；管線 16 人 11.33 t/s。資料平行各自 KV 每板 4 人只有 3.34 t/s 且記憶體到極限；管線各自 KV 尚未實測（`results/6.12_long_context_throughput.md`） |
+| 長對話、每人各自 4K 開頭（`--distinct`） | f16：管線 1/4/8/16 人 1.83 / 4.22 / 8.90 / 7.44 t/s（16 人反而變慢）。q8_0、兩邊都 unified KV：8 人資料平行 10.00 vs 管線 9.75，16 人 10.98 vs 10.73 t/s（**持平**；資料平行 16 人時每板只剩 0.8 GB，管線還有 9–11 GB）。先前「管線快 33%」是 KV 配置不同造成的，已更正（`results/6.13_distinct_kv_and_q8_kv.md`） |
+| KV 改 q8_0（`--kv-type q8_0`） | 容量約加倍：每人 1K/4K/8K/32K 管線 51 / 41 / 32 / 14 人，資料平行 20 / 16 / 12 / 4 人；各自 4K 開頭吞吐 8 人 9.75、**16 人 10.73 t/s（f16 的 1.44 倍）**；61 列中 60 列 top-1 與 f16 相同；prefill 慢約 18%。前段 mmap 會觸發 node1 swap，不可用（`6.13`） |
+| 短對話 32/48/64 人（切 33 層） | f16 24.76 / 23.44 / 24.94、q8_0 24.63 / 23.34 / 24.94 t/s：約 25 t/s 封頂，後段 99% 忙碌是瓶頸；短對話時 q8_0 不影響速度（`results/6.14_short_q8_and_three_stage.md`） |
+| 三段管線（`--role mid`） | node1 [0,20) → node2 [20,40) → node2 [40,60)：與單板逐位元相同，生成 token 32/32 一致；4 板串成 first → mid → mid → last（`6.14`） |
 
 **進度總報告**：`results/REPORT_2026-11-13.md`。
 
@@ -98,7 +102,7 @@ RPC worker 啟動：`taskset -c 0,1,6-11 ./build-cpu-opt/bin/ggml-rpc-server -H 
 
 **注意**：`llama_context_default_params()` 的 `swa_full` 預設為 `true`（滑動視窗層的 KV 開到整個上下文），llama-server 等工具預設為 `false`。自寫工具量容量時要設 `swa_full = false`。
 
-**下一步**：管線在各自 KV（每人不同 4K 對話）下的吞吐；前段改用非 unified KV 又不被逐序列拆批次的方法；切點對容量與吞吐的取捨（第 30 vs 33 層）；重複量測取標準差。`llama-pp-stage` 已有 `--prefix N`（共用開頭）與 `--ctx-seq`，並改為 `swa_full = false`。node1 有 swap（swappiness 100），記憶體接近極限的實驗容易被監控程式停止。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
+**下一步**：q8_0 下 24、32 人的長對話；`--no-kvu`（需 `results/patches/llama-context-embd-all.patch`，兩板已套用，預期收益 ≤5%）；切點對容量與吞吐的取捨；重複量測取標準差。`llama-pp-stage` 新增 `--role mid`（`-s A -e B --stage-id k`）、`--distinct`、`--kv-type`、`--no-kvu`、`--mmap`；`llama-cap-test` 新增 `--kv-type`、`--no-kvu`、`--mmap`。協調腳本在 `results/scripts/`。交接文件：`HANDOFF_2026-11-19.md`。node1 有 swap（swappiness 100），記憶體接近極限的實驗容易被監控程式停止。標準答案 `/tmp/stage_ref_31b.bin` 開機後會消失，要用 `llama-stage-test --mode ref` 重新產生（約 10 分鐘）。
 
 兩張板子開機後都要執行 `~/set_perf.sh`（需要 sudo），調頻才會是 `performance`。監控腳本 `~/wd_mem.sh` 會記錄最高溫度，並每筆立即寫入磁碟。
 

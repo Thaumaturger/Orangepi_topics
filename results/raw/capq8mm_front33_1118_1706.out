@@ -1,0 +1,11 @@
+[load] layers [0, 33) of 60  529.9 s  rss 17463 MiB  avail before 24772 / after 16097 MiB  reserve 1024 MiB
+[cap] L   1024  users   1  n_ctx     1024  rss  17745 MiB  avail  15829 MiB  ok  (0.5 s)
+[cap] L   1024  users   2  n_ctx     2048  rss  17982 MiB  avail  15569 MiB  ok  (2.0 s)
+[cap] L   1024  users   4  n_ctx     4096  rss  18500 MiB  avail  15049 MiB  ok  (0.7 s)
+[cap] L   1024  users   8  n_ctx     8192  rss  19532 MiB  avail  14003 MiB  ok  (1.2 s)
+[cap] L   1024  users  12  n_ctx    12288  rss  20560 MiB  avail  12949 MiB  ok  (3.9 s)
+[cap] L   1024  users  16  n_ctx    16384  rss  21605 MiB  avail  11904 MiB  ok  (1.9 s)
+[cap] L   1024  users  24  n_ctx    24576  rss  23692 MiB  avail   9817 MiB  ok  (2.8 s)
+[cap] L   1024  users  32  n_ctx    32768  rss  24095 MiB  avail   7746 MiB  ok  (7.8 s)
+[cap] L   1024  users  40  n_ctx    40960  rss  24142 MiB  avail   5668 MiB  ok  (5.5 s)
+[cap] L   1024  users  48  n_ctx    49152  rss  24208 MiB  avail   3584 MiB  ok  (6.0 s)

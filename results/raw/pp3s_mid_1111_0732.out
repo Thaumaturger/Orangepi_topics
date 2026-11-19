@@ -1,0 +1,5 @@
+[load] mid layers [20, 40)  339.6 s  rss 5337 MiB
+[ctx] n_ctx 2048, n_batch 2048, n_seq_max 8, kv_unified 1, swa_full 0, kv f16, load dio, rss 5932 MiB
+[mid] layers [20, 40), stage-id 1, listening on 192.168.137.31:9001, next 192.168.137.31:9000
+[mid] client connected, next connected
+[mid] client disconnected (compute 100.4 s of 154.9 s)

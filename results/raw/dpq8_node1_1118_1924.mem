@@ -1,0 +1,43 @@
+19:24:07 swap_kb=0 avail_kb=25060644 psi_full10=0.00 cpu=00:00:00 hi=0 tmax=49000
+19:24:22 swap_kb=0 avail_kb=23843860 psi_full10=0.00 cpu=00:00:01 hi=0 tmax=44000
+19:24:38 swap_kb=0 avail_kb=23830376 psi_full10=0.00 cpu=00:00:01 hi=0 tmax=44000
+19:24:53 swap_kb=0 avail_kb=23705740 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+19:25:08 swap_kb=0 avail_kb=23188236 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+19:25:23 swap_kb=0 avail_kb=22614868 psi_full10=0.00 cpu=00:00:02 hi=0 tmax=43000
+19:25:39 swap_kb=0 avail_kb=22098276 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=43000
+19:25:54 swap_kb=0 avail_kb=21583816 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=43000
+19:26:09 swap_kb=0 avail_kb=21006224 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=42000
+19:26:24 swap_kb=0 avail_kb=20484256 psi_full10=0.00 cpu=00:00:03 hi=0 tmax=42000
+19:26:40 swap_kb=0 avail_kb=19909428 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=42000
+19:26:55 swap_kb=0 avail_kb=19372312 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=42000
+19:27:10 swap_kb=0 avail_kb=18829608 psi_full10=0.00 cpu=00:00:04 hi=0 tmax=42000
+19:27:25 swap_kb=0 avail_kb=18311028 psi_full10=0.00 cpu=00:00:05 hi=0 tmax=42000
+19:27:41 swap_kb=0 avail_kb=17724820 psi_full10=0.00 cpu=00:00:05 hi=0 tmax=42000
+19:27:56 swap_kb=0 avail_kb=17206780 psi_full10=0.00 cpu=00:00:05 hi=0 tmax=42000
+19:28:11 swap_kb=0 avail_kb=16632380 psi_full10=0.00 cpu=00:00:05 hi=0 tmax=42000
+19:28:26 swap_kb=0 avail_kb=16114524 psi_full10=0.00 cpu=00:00:06 hi=0 tmax=42000
+19:28:42 swap_kb=0 avail_kb=15597024 psi_full10=0.00 cpu=00:00:06 hi=0 tmax=42000
+19:28:57 swap_kb=0 avail_kb=15092760 psi_full10=0.00 cpu=00:00:06 hi=0 tmax=42000
+19:29:12 swap_kb=0 avail_kb=14507956 psi_full10=0.00 cpu=00:00:07 hi=0 tmax=42000
+19:29:27 swap_kb=0 avail_kb=13994168 psi_full10=0.00 cpu=00:00:07 hi=0 tmax=42000
+19:29:43 swap_kb=0 avail_kb=13481788 psi_full10=0.00 cpu=00:00:07 hi=0 tmax=42000
+19:29:58 swap_kb=0 avail_kb=12897484 psi_full10=0.00 cpu=00:00:08 hi=0 tmax=41000
+19:30:13 swap_kb=0 avail_kb=12383192 psi_full10=0.00 cpu=00:00:08 hi=0 tmax=41000
+19:30:29 swap_kb=0 avail_kb=11794460 psi_full10=0.00 cpu=00:00:08 hi=0 tmax=41000
+19:30:44 swap_kb=0 avail_kb=11270000 psi_full10=0.00 cpu=00:00:08 hi=0 tmax=41000
+19:30:59 swap_kb=0 avail_kb=10779764 psi_full10=0.00 cpu=00:00:09 hi=0 tmax=41000
+19:31:14 swap_kb=0 avail_kb=10249820 psi_full10=0.00 cpu=00:00:09 hi=0 tmax=41000
+19:31:30 swap_kb=0 avail_kb=9688360 psi_full10=0.00 cpu=00:00:09 hi=0 tmax=41000
+19:31:45 swap_kb=0 avail_kb=9168520 psi_full10=0.00 cpu=00:00:10 hi=0 tmax=41000
+19:32:00 swap_kb=0 avail_kb=8633316 psi_full10=0.00 cpu=00:00:10 hi=0 tmax=41000
+19:32:15 swap_kb=0 avail_kb=8136952 psi_full10=0.00 cpu=00:00:10 hi=0 tmax=41000
+19:32:31 swap_kb=0 avail_kb=7662748 psi_full10=0.00 cpu=00:00:11 hi=0 tmax=41000
+19:32:46 swap_kb=0 avail_kb=7123932 psi_full10=0.00 cpu=00:00:11 hi=0 tmax=41000
+19:33:01 swap_kb=0 avail_kb=6593792 psi_full10=0.00 cpu=00:00:11 hi=0 tmax=41000
+19:34:00 swap_kb=34764 avail_kb=175028 psi_full10=39.14 cpu=00:00:12 hi=1 tmax=41000
+19:38:27 swap_kb=2478180 avail_kb=165936 psi_full10=95.55 cpu=00:00:12 hi=2 tmax=40000
+WATCHDOG KILL
+19:39:59 swap_kb=3195060 avail_kb=180588 psi_full10=92.55 cpu= hi=3 tmax=41000
+WATCHDOG KILL
+/home/orangepi/wd_mem.sh: line 16: kill: (49907) - No such process
+19:40:14 target exited

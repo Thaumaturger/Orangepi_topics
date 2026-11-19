@@ -51,8 +51,18 @@ static std::vector<int> parse_list(const std::string & s) {
     return v;
 }
 
+// KV cache element type by name (K and V use the same type; quantized V needs flash attention, which is on by default)
+static ggml_type kv_type_from_name(const std::string & s) {
+    if (s == "f16")  return GGML_TYPE_F16;
+    if (s == "q8_0") return GGML_TYPE_Q8_0;
+    if (s == "q4_0") return GGML_TYPE_Q4_0;
+    fprintf(stderr, "unknown --kv-type %s (f16, q8_0, q4_0)\n", s.c_str());
+    exit(1);
+}
+
 struct opts_t {
-    std::string model;
+    std::string model, kv_type = "f16";
+    bool kv_unified = true, mmap = false;
     int a = 0, b = -1, n_threads = 8;
     long reserve_mib = 1024;
     std::vector<int> ctxs = {1024, 4096, 8192}, users = {1, 2, 4, 8, 16, 32};
@@ -71,7 +81,9 @@ static bool measure(llama_model * m, const opts_t & o, bool first, bool last, in
     cp.n_threads_batch = o.n_threads;
     cp.embeddings      = !last;
     cp.pooling_type    = LLAMA_POOLING_TYPE_NONE;
-    cp.kv_unified      = true;
+    cp.kv_unified      = o.kv_unified;
+    cp.type_k          = kv_type_from_name(o.kv_type);
+    cp.type_v          = cp.type_k;
     // sliding-window layers keep only n_swa (1024) cells per sequence, as llama-server does by default
     // (llama_context_default_params() sets swa_full = true, which sizes them like the full-attention layers)
     cp.swa_full        = false;
@@ -114,13 +126,16 @@ int main(int argc, char ** argv) {
         else if (a == "--ctx")         o.ctxs = parse_list(next());
         else if (a == "--users")       o.users = parse_list(next());
         else if (a == "--reserve-mib") o.reserve_mib = std::atol(next().c_str());
+        else if (a == "--kv-type")     o.kv_type = next();
+        else if (a == "--no-kvu")      o.kv_unified = false;
+        else if (a == "--mmap")        o.mmap = true;
         else { fprintf(stderr, "unknown argument %s\n", a.c_str()); return 1; }
     }
     if (o.model.empty()) { fprintf(stderr, "usage: %s -m model.gguf [-a A -b B] [--ctx L1,L2] [--users U1,U2] [--reserve-mib R] [-t N]\n", argv[0]); return 1; }
 
     llama_backend_init();
     llama_model_params mp = llama_model_default_params();
-    mp.load_mode   = LLAMA_LOAD_MODE_DIRECT_IO;
+    mp.load_mode   = o.mmap ? LLAMA_LOAD_MODE_MMAP : LLAMA_LOAD_MODE_DIRECT_IO;
     mp.layer_start = o.a;
     mp.layer_end   = o.b;
     const long avail0 = avail_mib();
