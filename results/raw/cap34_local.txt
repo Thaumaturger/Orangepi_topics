@@ -1,0 +1,47 @@
+[cap] start 13:34:09
+== node1 capq8_front34_1119_0130.log
+# exit=0 end: 2026-11-19T01:36:12+00:00
+[load] layers [0, 34) of 60  299.8 s  rss 10411 MiB  avail before 24828 / after 14394 MiB  reserve 1024 MiB
+[cap] L   1024  per user 271 MiB
+[result] L   1024  max users  49
+[cap] L   4096  per user 334 MiB
+[result] L   4096  max users  39
+[cap] L   8192  per user 421 MiB
+[result] L   8192  max users  31
+[cap] L  32768  per user 929 MiB
+[result] L  32768  max users  14
+== node2 capq8_back34_1111_1118.log
+# exit=0 end: 2026-11-11T11:23:05+00:00
+[load] layers [34, 60) of 60  241.6 s  rss 8355 MiB  avail before 24833 / after 16451 MiB  reserve 1024 MiB
+[cap] L   1024  per user 203 MiB
+[result] L   1024  max users  75
+[cap] L   4096  per user 268 MiB
+[result] L   4096  max users  57
+[cap] L   8192  per user 354 MiB
+[result] L   8192  max users  43
+[cap] L  32768  per user 866 MiB
+[result] L  32768  max users  17
+== node1 capf16_front34_1119_0136.log
+# exit=0 end: 2026-11-19T01:41:42+00:00
+[load] layers [0, 34) of 60  300.2 s  rss 10411 MiB  avail before 24822 / after 14392 MiB  reserve 1024 MiB
+[cap] L   1024  per user 506 MiB
+[result] L   1024  max users  26
+[cap] L   4096  per user 627 MiB
+[result] L   4096  max users  20
+[cap] L   8192  per user 791 MiB
+[result] L   8192  max users  16
+[cap] L  32768  per user 1753 MiB
+[result] L  32768  max users   7
+== node2 capf16_back34_1111_1123.log
+# exit=0 end: 2026-11-11T11:28:27+00:00
+[load] layers [34, 60) of 60  241.2 s  rss 8355 MiB  avail before 24829 / after 16440 MiB  reserve 1024 MiB
+[cap] L   1024  per user 378 MiB
+[result] L   1024  max users  40
+[cap] L   4096  per user 503 MiB
+[result] L   4096  max users  30
+[cap] L   8192  per user 659 MiB
+[result] L   8192  max users  23
+[cap] L  32768  per user 1625 MiB
+[result] L  32768  max users   9
+[cap] done 13:45:25
+exit 0

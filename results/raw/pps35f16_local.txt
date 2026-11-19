@@ -1,0 +1,15 @@
+[pp] === pps35f16: -s 35 --n-seq 64 --ctx-seq 256 --configs 32x2,64x2 (13:45:38 UTC)
+pps35f16_first_1119_0142.log
+# start: 2026-11-19T01:42:03+00:00
+# exit=0 end: 2026-11-19T01:52:26+00:00
+[ctx] n_ctx 16384, n_batch 8192, n_seq_max 64, kv_unified 1, swa_full 0, kv f16, load dio, rss 19125 MiB
+[verify] rows 61  top1 agree 61/61  worst max_abs 0.000e+00  -> PASS
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 40.07 s  -> 25.56 t/s total, 0.799 t/s per seq  | busy A 98%  B 96%  | prefix 0 tok shared (0 new seq) 0.0 s | prefill 57.4 s | seq0 vs ref 32/32
+[config 64x2] R 64  M 2  per-mb 32  gen 32 tok/seq  time 79.56 s  -> 25.74 t/s total, 0.402 t/s per seq  | busy A 98%  B 96%  | prefix 0 tok shared (0 new seq) 0.0 s | prefill 119.3 s | seq0 vs ref 32/32
+min avail MiB 5382 tmax 72000
+pps35f16_last_1111_1129.log
+# start: 2026-11-11T11:29:37+00:00
+# exit=143 end: 2026-11-11T11:40:09+00:00
+min avail MiB 10439 tmax 73000
+[pp] pps35f16 done (13:56:18 UTC)
+exit 0
