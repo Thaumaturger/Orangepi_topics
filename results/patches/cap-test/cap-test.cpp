@@ -40,8 +40,15 @@ static long status_kib(const char * file, const char * key) {
     return -1;
 }
 
-static long rss_mib()   { return status_kib("/proc/self/status", "VmRSS:") / 1024; }
-static long avail_mib() { return status_kib("/proc/meminfo", "MemAvailable:") / 1024; }
+// With --mmap the model weights live in the page cache, which MemAvailable counts as reclaimable. Using them
+// as free memory would let the KV cache push the weights out (they would then be re-read from disk), so in
+// mmap mode the resident file-backed pages of this process (RssFile) are subtracted from MemAvailable.
+static bool g_sub_rssfile = false;
+static long rss_mib()     { return status_kib("/proc/self/status", "VmRSS:") / 1024; }
+static long rssfile_mib() { return status_kib("/proc/self/status", "RssFile:") / 1024; }
+static long avail_mib()   {
+    return status_kib("/proc/meminfo", "MemAvailable:") / 1024 - (g_sub_rssfile ? rssfile_mib() : 0);
+}
 
 static std::vector<int> parse_list(const std::string & s) {
     std::vector<int> v;
@@ -62,7 +69,7 @@ static ggml_type kv_type_from_name(const std::string & s) {
 
 struct opts_t {
     std::string model, kv_type = "f16";
-    bool kv_unified = true, mmap = false;
+    bool kv_unified = true, mmap = false, avail_raw = false;   // avail_raw: with --mmap, use MemAvailable as is
     int a = 0, b = -1, n_threads = 8;
     long reserve_mib = 1024;
     std::vector<int> ctxs = {1024, 4096, 8192}, users = {1, 2, 4, 8, 16, 32};
@@ -105,8 +112,8 @@ static bool measure(llama_model * m, const opts_t & o, bool first, bool last, in
     p.rss   = rss_mib();
     p.avail = avail_mib();
     p.ok    = ok;
-    printf("[cap] L %6d  users %3d  n_ctx %8ld  rss %6ld MiB  avail %6ld MiB  %s  (%.1f s)\n",
-           L, U, (long) U * L, p.rss, p.avail, ok ? "ok" : "DECODE FAILED", now_s() - t0);
+    printf("[cap] L %6d  users %3d  n_ctx %8ld  rss %6ld MiB  rssfile %5ld MiB  avail %6ld MiB  %s  (%.1f s)\n",
+           L, U, (long) U * L, p.rss, rssfile_mib(), p.avail, ok ? "ok" : "DECODE FAILED", now_s() - t0);
     fflush(stdout);
     llama_batch_free(bt);
     llama_free(c);
@@ -129,6 +136,7 @@ int main(int argc, char ** argv) {
         else if (a == "--kv-type")     o.kv_type = next();
         else if (a == "--no-kvu")      o.kv_unified = false;
         else if (a == "--mmap")        o.mmap = true;
+        else if (a == "--avail-raw")   o.avail_raw = true;
         else { fprintf(stderr, "unknown argument %s\n", a.c_str()); return 1; }
     }
     if (o.model.empty()) { fprintf(stderr, "usage: %s -m model.gguf [-a A -b B] [--ctx L1,L2] [--users U1,U2] [--reserve-mib R] [-t N]\n", argv[0]); return 1; }
@@ -138,6 +146,7 @@ int main(int argc, char ** argv) {
     mp.load_mode   = o.mmap ? LLAMA_LOAD_MODE_MMAP : LLAMA_LOAD_MODE_DIRECT_IO;
     mp.layer_start = o.a;
     mp.layer_end   = o.b;
+    g_sub_rssfile  = o.mmap && !o.avail_raw;
     const long avail0 = avail_mib();
     const double t0 = now_s();
     llama_model * m = llama_model_load_from_file(o.model.c_str(), mp);
@@ -146,8 +155,9 @@ int main(int argc, char ** argv) {
     const bool first   = o.a == 0;
     const bool last    = o.b < 0 || o.b >= n_layer;
     malloc_trim(0);
-    printf("[load] layers [%d, %d) of %d  %.1f s  rss %ld MiB  avail before %ld / after %ld MiB  reserve %ld MiB\n",
-           o.a, last ? n_layer : o.b, n_layer, now_s() - t0, rss_mib(), avail0, avail_mib(), o.reserve_mib);
+    printf("[load] layers [%d, %d) of %d  %.1f s  rss %ld MiB  rssfile %ld MiB  avail before %ld / after %ld MiB  reserve %ld MiB%s\n",
+           o.a, last ? n_layer : o.b, n_layer, now_s() - t0, rss_mib(), rssfile_mib(), avail0, avail_mib(), o.reserve_mib,
+           g_sub_rssfile ? "  (avail = MemAvailable - RssFile)" : "");
     fflush(stdout);
 
     // the model alone (no context) is the first reference point, so even the first step of each L is predicted

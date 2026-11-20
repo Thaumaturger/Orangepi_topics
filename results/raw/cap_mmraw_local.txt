@@ -1,0 +1,26 @@
+== node1 capmmraw_q8_0_front33_1119_0532.log
+# exit=0 end: 2026-11-19T05:42:37+00:00
+[load] layers [0, 33) of 60  516.1 s  rss 17463 MiB  rssfile 8746 MiB  avail before 24810 / after 16033 MiB  reserve 1024 MiB
+[cap] L   1024  per user 258 MiB
+[result] L   1024  max users  57
+[cap] L   4096  per user 324 MiB
+[result] L   4096  max users  45
+[cap] L   8192  per user 412 MiB
+[result] L   8192  max users  36
+[cap] L  32768  per user 913 MiB
+[result] L  32768  max users  16
+swap_kb first 8832 max 57316; psi_full max 18.07
+== node1 capmmraw_q4_0_front33_1119_0542.log
+# exit=0 end: 2026-11-19T05:52:58+00:00
+[load] layers [0, 33) of 60  516.6 s  rss 17615 MiB  rssfile 8897 MiB  avail before 24889 / after 16040 MiB  reserve 1024 MiB
+[cap] L   1024  per user 141 MiB
+[result] L   1024  max users 107
+[cap] L   4096  per user 174 MiB
+[result] L   4096  max users  85
+[cap] L   8192  per user 219 MiB
+[result] L   8192  max users  68
+[cap] L  32768  per user 490 MiB
+[result] L  32768  max users  30
+swap_kb first 17636 max 44772; psi_full max 7.91
+[cap] done 17:56:40
+exit 0

@@ -1,0 +1,48 @@
+[load] layers [0, 60) of 60  543.0 s  rss 18669 MiB  rssfile 6 MiB  avail before 24825 / after 6113 MiB  reserve 1024 MiB
+[cap] L   1024  users   1  n_ctx     1024  rss  18975 MiB  rssfile     7 MiB  avail   5805 MiB  ok  (0.5 s)
+[cap] L   1024  users   2  n_ctx     2048  rss  19230 MiB  rssfile     7 MiB  avail   5552 MiB  ok  (0.8 s)
+[cap] L   1024  users   3  n_ctx     3072  rss  19480 MiB  rssfile     7 MiB  avail   5306 MiB  ok  (1.1 s)
+[cap] L   1024  users   4  n_ctx     4096  rss  19738 MiB  rssfile     7 MiB  avail   5043 MiB  ok  (0.6 s)
+[cap] L   1024  users   5  n_ctx     5120  rss  19983 MiB  rssfile     7 MiB  avail   4802 MiB  ok  (0.9 s)
+[cap] L   1024  users   6  n_ctx     6144  rss  20229 MiB  rssfile     7 MiB  avail   4555 MiB  ok  (1.2 s)
+[cap] L   1024  users   8  n_ctx     8192  rss  20741 MiB  rssfile     7 MiB  avail   4040 MiB  ok  (1.0 s)
+[cap] L   1024  users  10  n_ctx    10240  rss  21234 MiB  rssfile     7 MiB  avail   3546 MiB  ok  (1.6 s)
+[cap] L   1024  users  12  n_ctx    12288  rss  21732 MiB  rssfile     7 MiB  avail   3050 MiB  ok  (1.4 s)
+[cap] L   1024  users  16  n_ctx    16384  rss  22738 MiB  rssfile     7 MiB  avail   2040 MiB  ok  (1.5 s)
+[cap] L   1024  users  20  n_ctx    20480  rss  23737 MiB  rssfile     7 MiB  avail   1029 MiB  ok  (2.0 s)
+[cap] L   1024  users  24  skipped: predicted avail 18 MiB < reserve
+[cap] L   1024  per user 253 MiB
+[result] L   1024  max users  20
+[cap] L   4096  users   1  n_ctx     4096  rss  19159 MiB  rssfile     7 MiB  avail   5620 MiB  ok  (0.5 s)
+[cap] L   4096  users   2  n_ctx     8192  rss  19479 MiB  rssfile     7 MiB  avail   5297 MiB  ok  (0.8 s)
+[cap] L   4096  users   3  n_ctx    12288  rss  19795 MiB  rssfile     7 MiB  avail   4981 MiB  ok  (1.1 s)
+[cap] L   4096  users   4  n_ctx    16384  rss  20122 MiB  rssfile     7 MiB  avail   4651 MiB  ok  (0.6 s)
+[cap] L   4096  users   5  n_ctx    20480  rss  20430 MiB  rssfile     7 MiB  avail   4342 MiB  ok  (0.9 s)
+[cap] L   4096  users   6  n_ctx    24576  rss  20753 MiB  rssfile     7 MiB  avail   4019 MiB  ok  (1.2 s)
+[cap] L   4096  users   8  n_ctx    32768  rss  21387 MiB  rssfile     7 MiB  avail   3388 MiB  ok  (1.1 s)
+[cap] L   4096  users  10  n_ctx    40960  rss  22024 MiB  rssfile     7 MiB  avail   2748 MiB  ok  (1.6 s)
+[cap] L   4096  users  12  n_ctx    49152  rss  22664 MiB  rssfile     7 MiB  avail   2106 MiB  ok  (1.5 s)
+[cap] L   4096  users  16  skipped: predicted avail 822 MiB < reserve
+[cap] L   4096  users  15  n_ctx    61440  rss  23615 MiB  rssfile     7 MiB  avail   1155 MiB  ok  (2.3 s)
+[cap] L   4096  per user 321 MiB
+[result] L   4096  max users  15
+[cap] L   8192  users   1  n_ctx     8192  rss  19249 MiB  rssfile     7 MiB  avail   5531 MiB  ok  (0.5 s)
+[cap] L   8192  users   2  n_ctx    16384  rss  19658 MiB  rssfile     7 MiB  avail   5122 MiB  ok  (0.9 s)
+[cap] L   8192  users   3  n_ctx    24576  rss  20066 MiB  rssfile     7 MiB  avail   4713 MiB  ok  (1.1 s)
+[cap] L   8192  users   4  n_ctx    32768  rss  20475 MiB  rssfile     7 MiB  avail   4297 MiB  ok  (0.7 s)
+[cap] L   8192  users   5  n_ctx    40960  rss  20889 MiB  rssfile     7 MiB  avail   3876 MiB  ok  (1.0 s)
+[cap] L   8192  users   6  n_ctx    49152  rss  21296 MiB  rssfile     7 MiB  avail   3473 MiB  ok  (1.3 s)
+[cap] L   8192  users   8  n_ctx    65536  rss  22117 MiB  rssfile     7 MiB  avail   2658 MiB  ok  (1.1 s)
+[cap] L   8192  users  10  n_ctx    81920  rss  22926 MiB  rssfile     7 MiB  avail   1838 MiB  ok  (1.7 s)
+[cap] L   8192  users  12  skipped: predicted avail 1018 MiB < reserve
+[cap] L   8192  users  11  n_ctx    90112  rss  23332 MiB  rssfile     7 MiB  avail   1430 MiB  ok  (1.9 s)
+[cap] L   8192  per user 410 MiB
+[result] L   8192  max users  11
+[cap] L  32768  users   1  n_ctx    32768  rss  19795 MiB  rssfile     7 MiB  avail   4978 MiB  ok  (0.6 s)
+[cap] L  32768  users   2  n_ctx    65536  rss  20752 MiB  rssfile     7 MiB  avail   4015 MiB  ok  (1.0 s)
+[cap] L  32768  users   3  n_ctx    98304  rss  21694 MiB  rssfile     7 MiB  avail   3072 MiB  ok  (1.3 s)
+[cap] L  32768  users   4  n_ctx   131072  rss  22654 MiB  rssfile     7 MiB  avail   2115 MiB  ok  (0.8 s)
+[cap] L  32768  users   5  n_ctx   163840  rss  23599 MiB  rssfile     7 MiB  avail   1167 MiB  ok  (1.2 s)
+[cap] L  32768  users   6  skipped: predicted avail 219 MiB < reserve
+[cap] L  32768  per user 948 MiB
+[result] L  32768  max users   5

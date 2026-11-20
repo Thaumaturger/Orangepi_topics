@@ -1,0 +1,63 @@
+[cap] start 17:06:16
+== node1 capq8mm2_front33_1119_0502.log
+# exit=0 end: 2026-11-19T05:12:00+00:00
+[load] layers [0, 33) of 60  526.7 s  rss 17463 MiB  rssfile 8746 MiB  avail before 24792 / after 7301 MiB  reserve 1024 MiB  (avail = MemAvailable - RssFile)
+[cap] L   1024  per user 260 MiB
+[result] L   1024  max users  24
+[cap] L   4096  per user 325 MiB
+[result] L   4096  max users  18
+[cap] L   8192  per user 411 MiB
+[result] L   8192  max users  14
+[cap] L  32768  per user 921 MiB
+[result] L  32768  max users   6
+swap_kb max 8320 first 4992
+== node2 capq4_back33_1119_0502.log
+# exit=0 end: 2026-11-19T05:08:17+00:00
+[load] layers [33, 60) of 60  250.0 s  rss 8612 MiB  rssfile 6 MiB  avail before 24813 / after 16192 MiB  reserve 1024 MiB
+[cap] L   1024  per user 113 MiB
+[result] L   1024  max users 133
+[cap] L   4096  per user 148 MiB
+[result] L   4096  max users 102
+[cap] L   8192  per user 192 MiB
+[result] L   8192  max users  78
+[cap] L  32768  per user 464 MiB
+[result] L  32768  max users  32
+swap_kb max 0 first 0
+== node1 capq4_front33_1119_0512.log
+# exit=0 end: 2026-11-19T05:18:14+00:00
+[load] layers [0, 33) of 60  292.9 s  rss 10153 MiB  rssfile 5 MiB  avail before 24827 / after 14647 MiB  reserve 1024 MiB
+[cap] L   1024  per user 141 MiB
+[result] L   1024  max users  97
+[cap] L   4096  per user 174 MiB
+[result] L   4096  max users  77
+[cap] L   8192  per user 219 MiB
+[result] L   8192  max users  61
+[cap] L  32768  per user 492 MiB
+[result] L  32768  max users  27
+swap_kb max 8320 first 8320
+== node2 capq4_full_1119_0512.log
+# exit=0 end: 2026-11-19T05:21:58+00:00
+[load] layers [0, 60) of 60  543.0 s  rss 18669 MiB  rssfile 6 MiB  avail before 24825 / after 6113 MiB  reserve 1024 MiB
+[cap] L   1024  per user 253 MiB
+[result] L   1024  max users  20
+[cap] L   4096  per user 321 MiB
+[result] L   4096  max users  15
+[cap] L   8192  per user 410 MiB
+[result] L   8192  max users  11
+[cap] L  32768  per user 948 MiB
+[result] L  32768  max users   5
+swap_kb max 0 first 0
+== node1 capq4mm_front33_1119_0522.log
+# exit=0 end: 2026-11-19T05:31:28+00:00
+[load] layers [0, 33) of 60  516.7 s  rss 17463 MiB  rssfile 8746 MiB  avail before 24791 / after 7319 MiB  reserve 1024 MiB  (avail = MemAvailable - RssFile)
+[cap] L   1024  per user 140 MiB
+[result] L   1024  max users  45
+[cap] L   4096  per user 174 MiB
+[result] L   4096  max users  35
+[cap] L   8192  per user 219 MiB
+[result] L   8192  max users  28
+[cap] L  32768  per user 481 MiB
+[result] L  32768  max users  12
+swap_kb max 9088 first 8064
+[cap] done 17:35:19
+exit 0
