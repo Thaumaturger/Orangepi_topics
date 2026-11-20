@@ -1,0 +1,16 @@
+[pp] === pp4kq4L: -s 33 --n-seq 48 --ctx-seq 4096 --kv-type q4_0 --prefix 4000 --distinct --configs 16x2,32x2,48x2 (05:14:00 UTC)
+pp4kq4L_first_1119_0740.log
+# start: 2026-11-19T07:40:37+00:00
+# exit=0 end: 2026-11-20T08:57:10+00:00
+[ctx] n_ctx 196608, n_batch 8192, n_seq_max 48, kv_unified 1, swa_full 0, kv q4_0, load dio, rss 18566 MiB
+[verify] rows 61  top1 agree 57/61  worst max_abs 5.854e+00  -> FAIL
+[config 16x2] R 16  M 2  per-mb  8  gen 32 tok/seq  time 50.22 s  -> 10.20 t/s total, 0.637 t/s per seq  | busy A 99%  B 103%  | prefix 4000 tok own (16 new seq) 4128.1 s | prefill 67.2 s | seq0 vs ref 0/0
+[config 32x2] R 32  M 2  per-mb 16  gen 32 tok/seq  time 82.83 s  -> 12.36 t/s total, 0.386 t/s per seq  | busy A 98%  B 106%  | prefix 4000 tok own (16 new seq) 4129.2 s | prefill 133.4 s | seq0 vs ref 0/0
+[config 48x2] R 48  M 2  per-mb 24  gen 32 tok/seq  time 128.40 s  -> 11.96 t/s total, 0.249 t/s per seq  | busy A 98%  B 97%  | prefix 4000 tok own (16 new seq) 4130.5 s | prefill 207.2 s | seq0 vs ref 0/0
+min avail MiB 5756 tmax 70000
+pp4kq4L_last_1119_0740.log
+# start: 2026-11-19T07:40:34+00:00
+# exit=143 end: 2026-11-20T08:57:21+00:00
+min avail MiB 8632 tmax 70000
+[pp] pp4kq4L done (08:57:46 UTC)
+exit 0
